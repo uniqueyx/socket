@@ -1,0 +1,16 @@
+{
+  "name": "socket",
+  "uuid": "5b0dda34-badd-49e9-9a79-83c0c358797f",
+  "creator": {
+    "version": "3.8.1"
+  },
+  "dependencies": {
+    "cors": "^2.8.5",
+    "express": "^4.18.2",
+    "socket.io": "^4.7.2",
+    "socket.io-client": "^4.7.2"
+  },
+  "devDependencies": {
+    "@types/socket.io-client": "^3.0.0"
+  }
+}
