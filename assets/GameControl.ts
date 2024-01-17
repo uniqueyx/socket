@@ -1,19 +1,24 @@
-import { _decorator, Component, Node, Prefab, instantiate, Vec3, Label, director, tween, view, Vec2, UITransform, Size, Rect, Color } from 'cc';
+import { _decorator, Component, Node, Prefab, instantiate, Vec3, Label, director, tween, view, Vec2, UITransform, Size, Rect, Color, NodeEventType, EventTouch, UIOpacity, RichText } from 'cc';
 import GameConfig from './scripts/Base/GameConfig';
 import GameEvent from './scripts/Base/GameEvent';
 import { SocketIO } from './scripts/Base/SocketIO';
 import Toast from './scripts/Base/Toast';
 import { CardControl } from './scripts/CardControl';
+import { AlertControl } from './scripts/Common/AlertControl';
 const { ccclass, property } = _decorator;
 
 @ccclass('GameControl')
 export class GameControl extends Component {
     @property(Prefab)
     Card:Prefab;
+    @property(Prefab)
+    Alert:Prefab;
 
     socketIO=null;
 
     cardTable:Node;
+    // actShow:Node;
+    actString="";
 
     countDownTime:number;
     myTurn:boolean;
@@ -40,11 +45,12 @@ export class GameControl extends Component {
         GameEvent.Instance.on("hp_update",this.reqHPUpdate,this);
         //游戏事件
         GameEvent.Instance.on("updateCardIndex",this.updateCardIndex,this);
+        //触摸事件
+        this.node.on(NodeEventType.TOUCH_START,this.onTouchStart,this);
+        this.node.on(NodeEventType.TOUCH_END,this.onTouchEnd,this);
+        this.node.on(NodeEventType.TOUCH_CANCEL,this.onTouchCancel,this);
         
-        // if(this.Card)   {
-        // if(this.Card)   {
-        // if(this.Card)   {
-        // if(this.Card)   {
+        
         // if(this.Card)   {
         //     let ca= instantiate(this.Card);
         // }    
@@ -79,16 +85,22 @@ export class GameControl extends Component {
         GameEvent.Instance.off("card_update",this.reqCardUpdate,this);
         GameEvent.Instance.off("buff_update",this.reqBuffUpdate,this);
         GameEvent.Instance.off("hp_update",this.reqHPUpdate,this);
+        //游戏事件
+        GameEvent.Instance.off("updateCardIndex",this.updateCardIndex,this);
+
+        this.node.off(NodeEventType.TOUCH_START,this.onTouchStart,this);
+        this.node.off(NodeEventType.TOUCH_END,this.onTouchEnd,this);
+        this.node.off(NodeEventType.TOUCH_CANCEL,this.onTouchCancel,this);
     }
     start() {
-        console.log("gamecontrol  start触发")
+        console.log("gamecontrol  start触发");
         // let scene=director.getScene();
         console.log("init gamecontrol  start",this.Card);
         
     }
 
     test(){
-        console.log('test>>',this.Card)
+        console.log('test>>',this.Card);
         director.loadScene("gameScene");
     }
     judgeTest(){
@@ -103,12 +115,17 @@ export class GameControl extends Component {
     //==================方法
     initUI(){
         this.useGeneralTimes=1;
+        this.actString="";
         this.turnCount=0;
         this.hp=GameConfig.INIT_HP;
         this.hpOther=GameConfig.INIT_HP;
+        this.node.getChildByName("ActShow").getChildByName("RichText").getComponent(RichText).string="";
+        this.node.getChildByName("ActShow").getChildByName("RichTextBg").getComponent(UITransform).height=0;
         this.node.getChildByName("LeftBottom").getChildByName("LbName").getComponent(Label).string=this.socketIO.userID;
         this.node.getChildByName("LeftBottom").getChildByName("LbHP").getComponent(Label).string=String(GameConfig.INIT_HP);
         this.node.getChildByName("RightTop").getChildByName("LbHP").getComponent(Label).string=String(GameConfig.INIT_HP);
+        
+        // this.node.getChildByName("ActShow").getComponent(UIOpacity).opacity=150;
     }
     countDown(){
         console.log("倒计时方法参数");
@@ -130,10 +147,24 @@ export class GameControl extends Component {
     //投降
     onBtSurrender(){
         console.log("发送 投降");
+        let al= instantiate(this.Alert);
+        let aControl=al.getComponent(AlertControl);
+        aControl.show("确定投降结束本局对战吗？",()=>{
+            this.sendSurrender();
+        });
+        al.setParent(this.node);
+        
+    }
+    //发送投降消息
+    sendSurrender(){
+        // console.log("参数value");
         this.socketIO.socket.emit("GAME", {
             type: "game_surrender",
             user: this.socketIO.userID
         });
+    }
+    testFun(){
+        console.log("测试 调用了 testFun")
     }
     //====特招相关方法
     //判断能否特招  need
@@ -197,11 +228,12 @@ export class GameControl extends Component {
     judgeCondition(key:string,condition:any,value:any){
         if(condition==undefined) return true;//属性不存在跳过判断直接返回true
         switch(key){
+            case "rare":
             case "cardType":
                 if(String(condition).indexOf(String(value))!=-1) return true;
                 break;
             case "force": 
-            case "rare":
+            // case "rare":
             case "name":
                 if(condition==value) return true;
                 break;
@@ -642,6 +674,8 @@ export class GameControl extends Component {
         let remainNode=this.node.getChildByName(myself?"RightBottom":"LeftTop");
         let label=this.node.getChildByName(myself?"RightBottomUI":"LeftTopUI").getChildByName("LbCardNum").getComponent(Label);
         label.string=String(remainNode.children.length);
+        let value=myself?1:-1;
+        label.node.setPosition((5+0.4*(remainNode.children.length-1))*value,0.4*(remainNode.children.length-1));
     }
     //召唤卡牌
     addTableCard(data:any,updateType:number,myself:boolean=true){
@@ -783,6 +817,28 @@ export class GameControl extends Component {
             cardOne.getComponent(CardControl).initAttackCount(1);
         }
     }
+    //加入富文本
+    addRichText(id:number,myself:boolean){
+        let baseData:any=GameConfig.getCardDataById(id);
+        
+        
+        let newStr=this.actString==""?"":"<br/>";
+        newStr+=myself?"我":"<color=#ff>敌</color>";
+        // newStr+=baseData.cardName;
+        newStr+="<u><i><b><color="+GameConfig.COLOR_RARE16[baseData.rare]+" click='cardClick' param='"+baseData.id+"'>"+baseData.cardName+"</color></b></i></u>";
+        
+        this.actString+=newStr;
+        let arr=this.actString.split("<br/>");
+        if(arr.length==11){
+            this.actString=this.actString.slice(this.actString.indexOf("<br/>")+5);
+        }
+        this.node.getChildByName("ActShow").getChildByName("RichText").getComponent(RichText).string=this.actString;
+        this.node.getChildByName("ActShow").getChildByName("RichTextBg").getComponent(UITransform).height=(arr.length>10?10:arr.length)*28.5;
+        // console.log(id,"富文本",arr);
+    }
+    showRichTextCard(value:string){
+        console.log("显示富文本卡牌",value)
+    }
     //===================服务器消息事件处理
     reqGameStart(data:any){
         console.log("服务器匹配成功事件 游戏开始",data);
@@ -867,7 +923,11 @@ export class GameControl extends Component {
             }).
             start();
             
+            
         }
+        //加入左侧富文本
+        this.addRichText(data.id,data.isMe);
+
     }
     reqCardAttack(data:any){
         console.log("服务器卡牌攻击事件 卡牌攻击",data);
@@ -967,6 +1027,22 @@ export class GameControl extends Component {
         console.log("服务器P变化事件 HP变化",data);
         this.updateHP(data.hp,data.isMe);
     }
+
+    //触摸事件
+    onTouchStart(e:EventTouch){
+        console.log("《《《《《《《《《《《《《《《《测试触摸事件");
+        // Toast.showTip("测试tip",new Vec3(e.getUILocation().x,e.getUILocation().y));
+        // Toast.hideTip();
+    }    
+    onTouchEnd(e:EventTouch){
+        console.log("hide TIP《《《《《《《《《《《《《《《《测试触摸事件 ");
+        Toast.hideTip();
+    } 
+    onTouchCancel(e:EventTouch){
+        console.log("hide TIP《《《《《《《《《《《《《《《《测试触摸事件 ");
+        Toast.hideTip();
+    }  
+    
 }
 
 

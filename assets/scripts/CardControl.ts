@@ -3,6 +3,7 @@ import { GameControl } from '../GameControl';
 import GameConfig from './Base/GameConfig';
 import GameEvent from './Base/GameEvent';
 import { SocketIO } from './Base/SocketIO';
+import Toast from './Base/Toast';
 const { ccclass, property } = _decorator;
 
 @ccclass('CardControl')
@@ -27,14 +28,18 @@ export class CardControl extends Component {
         this.node.getChildByName("CardBg").on(NodeEventType.TOUCH_MOVE,this.onTouchMove,this);
         this.node.getChildByName("CardBg").on(NodeEventType.TOUCH_END,this.onTouchEnd,this);
         this.node.getChildByName("CardBg").on(NodeEventType.TOUCH_CANCEL,this.onTouchCancel,this);
+        
     }
     
     start() {
         // console.log("card start>>>>>>>>>>>>>>")
     }
     onDestroy(){
-        // this.node.getChildByName("CardBg").off(NodeEventType.TOUCH_MOVE,this.onTouchMove,this);
-        // this.node.getChildByName("CardBg").off(NodeEventType.TOUCH_END,this.onTouchEnd,this);
+        return;
+        this.node.getChildByName("CardBg").off(NodeEventType.TOUCH_START,this.onTouchStart,this);
+        this.node.getChildByName("CardBg").off(NodeEventType.TOUCH_MOVE,this.onTouchMove,this);
+        this.node.getChildByName("CardBg").off(NodeEventType.TOUCH_END,this.onTouchEnd,this);
+        this.node.getChildByName("CardBg").off(NodeEventType.TOUCH_CANCEL,this.onTouchCancel,this);
     }
     update(deltaTime: number) {
         
@@ -94,10 +99,14 @@ export class CardControl extends Component {
     //添加buff
     addBuff(uid:number,buffId:number,value:number){
         console.log(this.baseData.cardName,"获得buff",buffId,"uid>",uid,"value>",value);
-        console.log(this.buffList)
+        // console.log(this.buffList)
         this.buffList.push({uid:uid,id:buffId,value:value});
         let index=this.buffList.length-1;
         let b= instantiate(this.IconBuff);
+        
+        b.on(NodeEventType.TOUCH_START,this.onBuffTouchStart,this);
+        // b.on(NodeEventType.TOUCH_END,this.onBuffTouchEnd,this);
+        // b.on(NodeEventType.TOUCH_CANCEL,this.onBuffTouchCancel,this);
         b.name=String(uid);//this.buffList[index].uid
         b.setScale(0.6,0.6);
         b.setParent(this.node.getChildByName("Buff"));
@@ -150,6 +159,9 @@ export class CardControl extends Component {
         for(const buff of this.node.getChildByName("Buff").children){
             if(buff.name==String(uid)) {
                 console.log("找到buff 移除",uid);
+                buff.off(NodeEventType.TOUCH_START,this.onBuffTouchStart,this);
+                // buff.off(NodeEventType.TOUCH_END,this.onBuffTouchEnd,this);
+                // buff.off(NodeEventType.TOUCH_CANCEL,this.onBuffTouchCancel,this);
                 buff.removeFromParent();
                 this.updateBuffPos();
                 break;
@@ -168,6 +180,13 @@ export class CardControl extends Component {
         }
         return arr;
     }
+    getBuffByUid(uid:number):any{
+        for(let i=0;i<this.buffList.length;i++){
+            let buff=this.buffList[i];
+            if(buff.uid==uid) return buff;
+        }
+        return null;
+    }
 
     //初始化gamecontrol
     initParent(parent:Node){
@@ -175,7 +194,7 @@ export class CardControl extends Component {
         this.gameControl=this.node.getParent().getParent().getComponent(GameControl);
     }
     updateAttack(){
-        this.node.getChildByName("LbAttack").getComponent(Label).string=this.getAttack();
+        this.node.getChildByName("AttackBg").getChildByName("LbAttack").getComponent(Label).string=this.getAttack();
     }
     //更新索引
     updateIndex(index:number){
@@ -188,11 +207,13 @@ export class CardControl extends Component {
     //显示基础信息
     showBase(){
         this.node.getChildByName("LbName").getComponent(Label).string=this.baseData.cardName;
+        this.node.getChildByName("LbName").getComponent(Label).color=GameConfig.COLOR_RARE[this.baseData.rare]
+        this.node.getChildByName("LbName").getComponent(UITransform).width=this.baseData.cardType==1?60:90;
         this.node.getChildByName("Info").getComponent(Label).string=this.baseData.info;
         // this.node.getChildByName("LbAttack").getComponent(Label).string=this.getAttack();
         this.node.getChildByName("CardBg").getComponent(Sprite).changeSpriteFrameFromAtlas("cardBg"+this.baseData.cardType);
         this.node.getChildByName("CardEdge").getComponent(Sprite).changeSpriteFrameFromAtlas("edge"+this.baseData.rare);
-        this.node.getChildByName("LbAttack").active=this.baseData.cardType==1;//武将卡显示攻击力
+        this.node.getChildByName("AttackBg").active=this.baseData.cardType==1;//武将卡显示攻击力
         this.updateAttack();
     }
     //获取实际攻击力
@@ -201,7 +222,7 @@ export class CardControl extends Component {
         for(let i=0;i<this.buffList.length;i++){
             let buff=this.buffList[i];
             if(buff.id==GameConfig.BUFF_ATTACK){
-                att+=buff.value;
+                att+=parseInt(buff.value);
             }
         }
         let newAtt=this.baseData.attack+att;
@@ -209,6 +230,21 @@ export class CardControl extends Component {
         return newAtt;
         // return this.baseData.attack;
     }
+    //========================触摸事件
+    //bufficon
+    onBuffTouchStart(e:EventTouch){
+        let buff=this.getBuffByUid(parseInt(e.target.name))
+        console.log(e.target.name,"显示bufftips<<<<onBuffTouchStart",e.getUILocation(),buff)
+        if(buff)    Toast.showTip(GameConfig.getBuffString(buff.id,buff.value),e.getUILocation());
+        //event.stopPropagation();  
+    }    
+    onBuffTouchEnd(e:EventTouch){
+        Toast.hideTip();
+    }  
+    onBuffTouchCancel(e:EventTouch){
+        Toast.hideTip();
+    }    
+    //卡牌触摸
     onTouchStart(e:EventTouch){
         this.initPos=new Vec3(this.node.position);//.x,this.node.position.y
         this.initIndex=this.node.getSiblingIndex();
@@ -262,6 +298,9 @@ export class CardControl extends Component {
          //重置位置
          this.node.setPosition(this.initPos);
          this.node.setSiblingIndex(this.initIndex);
+         if(this.posType==1&&this.node.position.y!=0){
+            console.log("手牌坐标有问题 需要重新update???")
+         }
     }
     onTouchCancel(e:EventTouch){
         console.log(">>>cancel>>",e);

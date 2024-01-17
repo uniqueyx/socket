@@ -1,4 +1,4 @@
-import { Color, find, Graphics, Label, Layers, Node, tween, UITransform, Vec3 } from "cc";
+import { Color, Director, director, find, Graphics, Label, Layers, Node, tween, UITransform, Vec2, Vec3 } from "cc";
 
 export default class Toast{
   
@@ -54,6 +54,73 @@ export default class Toast{
           })
           .start()
   }
+  /**显示提示tip*/
+  private static tipNode:Node;
+  public static showTip(str:string,pos:Vec3|Vec2){
+        const Canvas = find("Canvas");
+        const CanvasSize = Canvas.getComponent(UITransform).contentSize;
+        if(!this.tipNode||!this.tipNode.parent){
+            this.tipNode = new Node();
+            this.tipNode.layer = Layers.Enum.UI_2D;
+            this.tipNode.parent = Canvas;
+
+            //tip背景
+            this.tipNode.addComponent(Graphics);
+            // const g = this.tipNode.addComponent(Graphics);
+            // g.rect(CanvasSize.width / -2, -50 / 2, 720, 50);
+            // g.fillColor = new Color(0, 0, 0, 150);//填充
+            // g.stroke();
+            // g.fill();
+            //飘字背文本
+            const txtNode = new Node("txt");
+            txtNode.layer = Layers.Enum.UI_2D;
+            txtNode.parent = this.tipNode;
+            let lb=txtNode.addComponent(Label);
+            // lb.isBold=true;
+            lb.fontSize=25;
+            txtNode.setPosition(0, 0);
+        }else{
+            this.tipNode.active=true;
+        }
+
+        //设置文本后需要强制渲染 不然取不到真实宽度
+        this.tipNode.getChildByName("txt").getComponent(Label).string = str;
+        this.tipNode.getChildByName("txt").getComponent(Label).updateRenderData();
+        let w=this.tipNode.getChildByName("txt").getComponent(UITransform).width;
+        // console.log(this.tipNode.getChildByName("txt").getComponent(UITransform).width,"文本宽度",str);
+        console.log(this.tipNode.getChildByName("txt").getComponent(Label))
+        //根据文字内容宽度调整背景色大小
+        let h=40;
+        let g=this.tipNode.getComponent(Graphics);
+        g.clear();
+        g.fillColor = new Color(0, 0, 0, 150);//填充
+        g.rect(-w/2-5,-h/2,w+10,h);
+        g.stroke();
+        g.fill();
+
+        // let left=-w/2-5;
+        // let right=w/2+5;
+        // let top=h/2;
+        // let bottom=-h/2;
+        if(pos.x<w/2+5) pos.x=w/2+5;
+        if(pos.x>CanvasSize.width-w/2-5){
+            pos.x=CanvasSize.width-w/2-5;
+        }
+        if(pos.y+20>CanvasSize.height-20){
+            pos.y-=60;
+        }else{
+            pos.y+=50;
+        }
+
+        this.tipNode.setWorldPosition(new Vec3(pos.x,pos.y));//pos.y+20
+        // console.log((w/2+5),(w/2+5-pos.x))
+        // console.log(pos.x,pos.x<(w/2+5)?(w/2+5-pos.x):pos.x)
+  }
+    /**hide  tip*/
+  public static hideTip(){
+    if(this.tipNode) this.tipNode.active=false;
+  }
+
   /**飘字对象池*/
   private static tipPools: Array<Node> = [];
   /**显示飘字*/

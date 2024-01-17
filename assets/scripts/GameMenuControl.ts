@@ -1,7 +1,8 @@
-import { _decorator, Component, Node, director, Enum, Button, Label, Sprite, view, screen, UITransform, Widget, Vec3, Vec2, resources, JsonAsset, error } from 'cc';
+import { _decorator, Component, Node, director, Enum, Button, Label, Sprite, view, screen, UITransform, Widget, Vec3, Vec2, resources, JsonAsset, error, EventTouch, NodeEventType } from 'cc';
 import GameConfig from './Base/GameConfig';
 import GameEvent from './Base/GameEvent';
 import { SocketIO } from './Base/SocketIO';
+import Toast from './Base/Toast';
 const { ccclass, property } = _decorator;
 
 @ccclass('GameMenuControl')
@@ -23,6 +24,12 @@ export class GameMenuControl extends Component {
         GameEvent.Instance.on("match_success",this.reqMatchSuccess,this);
         GameEvent.Instance.on("match_wait",this.reqMatchWait,this);
         GameEvent.Instance.on("match_cancel",this.reqMatchCancel,this);
+
+        //触摸事件
+        //.getParent()
+        this.node.getParent().on(NodeEventType.TOUCH_START,this.onTouchStart,this);
+        this.node.getParent().on(NodeEventType.TOUCH_END,this.onTouchEnd,this);
+        this.node.getParent().on(NodeEventType.TOUCH_CANCEL,this.onTouchCancel,this);
         // this.initSocket();
         console.log("step>>>>3");
         this.socketIO=SocketIO.Instance;
@@ -125,6 +132,23 @@ export class GameMenuControl extends Component {
         director.loadScene("game");
         
     }
+
+    //触摸事件
+    onTouchStart(e:EventTouch){
+        return;
+        console.log("《《《《《《《《《《《《《《《《测试触摸事件");
+        let arrStr=["测试1111","测试2222222222","测试333333333332222","测试4444444444442244444"];
+        let ranStr=arrStr[Math.floor(Math.random()*2)];
+        Toast.showTip(ranStr,e.getUILocation());
+        
+    } 
+    onTouchEnd(e:EventTouch){
+        // Toast.hideTip();
+    }
+    onTouchCancel(e:EventTouch){
+        // Toast.hideTip();
+    }
+
     //服务器消息事件处理
     reqMatchSuccess(data:unknown){
         console.log("服务器匹配成功事件 切换场景 游戏开始",data);
