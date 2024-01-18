@@ -13,6 +13,8 @@ export class GameControl extends Component {
     Card:Prefab;
     @property(Prefab)
     Alert:Prefab;
+    @property(Prefab)
+    RedCross:Prefab;
 
     socketIO=null;
 
@@ -26,6 +28,7 @@ export class GameControl extends Component {
     hpOther:number;
 
     first:boolean;//是否先攻
+    gameState:number;//游戏状态阶段 1准备 2换牌 3回合开始
     turnCount:number;//回合数
     useGeneralTimes:number;//武将通常召唤次数
     onLoad(){
@@ -43,6 +46,7 @@ export class GameControl extends Component {
         GameEvent.Instance.on("card_update",this.reqCardUpdate,this);
         GameEvent.Instance.on("buff_update",this.reqBuffUpdate,this);
         GameEvent.Instance.on("hp_update",this.reqHPUpdate,this);
+        GameEvent.Instance.on("card_changeHand",this.reqCardChangeHand,this);
         //游戏事件
         GameEvent.Instance.on("updateCardIndex",this.updateCardIndex,this);
         //触摸事件
@@ -85,6 +89,7 @@ export class GameControl extends Component {
         GameEvent.Instance.off("card_update",this.reqCardUpdate,this);
         GameEvent.Instance.off("buff_update",this.reqBuffUpdate,this);
         GameEvent.Instance.off("hp_update",this.reqHPUpdate,this);
+        GameEvent.Instance.off("card_changeHand",this.reqCardChangeHand,this);
         //游戏事件
         GameEvent.Instance.off("updateCardIndex",this.updateCardIndex,this);
 
@@ -160,6 +165,25 @@ export class GameControl extends Component {
         // console.log("参数value");
         this.socketIO.socket.emit("GAME", {
             type: "game_surrender",
+            user: this.socketIO.userID
+        });
+    }
+    //发送更换手牌消息
+    onBtChangeHand(){
+        
+        let cardNode=this.node.getChildByName("ChangeCardShow").getChildByName("NodeCard");
+        // let changeNode=this.node.getChildByName("ChangeCardShow");
+        let arr=[];
+        for(const card of cardNode.children){
+            let uid=card.getComponent(CardControl).uid;
+            //changeNode.getChildByName()
+            let uidChange=this.node.getChildByName("ChangeCardShow").getChildByName(String(uid)).active?uid:0;
+            arr.push(uidChange);
+        }
+        console.log("发送 切换手牌",arr);
+        this.socketIO.socket.emit("GAME", {
+            type: "game_changeHand",
+            cardList:arr,
             user: this.socketIO.userID
         });
     }
@@ -380,7 +404,58 @@ export class GameControl extends Component {
         this.initRemainCard(data.remainCards);
         this.initHandCard(data.otherHandCards,false);
         this.initRemainCard(data.otherRemainCards,false);
+        if(this.gameState==2){
+            this.updateChangeCardPos();
+        }
     }
+    updateChangeCardPos(){
+        let changeNode=this.node.getChildByName("ChangeCardShow").getChildByName("NodeCard");
+        let node=this.node.getChildByName("Bottom");
+        // for(const cardHand of node.children){
+        for(let i=0;i<GameConfig.HANDCARD_COUNT;i++){   
+            // console.log(node.children.length,i,"测试1");//,node.children[0].getComponent(CardControl).index
+            node.children[0].setParent(changeNode)//设置parent为ChangeCardShow
+            // cardHand.setParent(changeNode);
+            // changeNode.addChild(card);
+            // console.log("测试2",node.children[0].getComponent(CardControl).index);
+        }    
+        let width=720;
+        let cardHalf=80;
+        let cardNum=node.children.length;
+        if(cardNum>GameConfig.HANDCARD_LIMIT) cardNum=GameConfig.HANDCARD_LIMIT;
+        cardNum=GameConfig.HANDCARD_COUNT;
+        
+        let apart=cardHalf*2;//-cardHalf*2
+        if(cardNum>4) apart=(width-cardHalf*2)/(cardNum-1);
+        for(const card of changeNode.children){
+            // console.log(changeNode.children.length,card,"<<<<<changeNode",card.getComponent(CardControl))
+            let index:number=card.getComponent(CardControl).index;
+            let posX:number;
+            if(cardNum<=4){
+                posX=( index* cardHalf*2) - (cardNum-1)*cardHalf;
+            }
+            else {
+                if(index==cardNum-1) posX=width/2-cardHalf;
+                else posX=-width/2+cardHalf+index*apart;
+            }    
+            // posX=-width/2+cardHalf+index*apart;
+            // console.log("间隔坐标x",posX);
+            card.setPosition(posX,0);//card.position.y
+            //初始化红叉
+            let redCross=instantiate(this.RedCross);
+            redCross.name=String(card.getComponent(CardControl).uid);
+            redCross.active=false;
+            redCross.setPosition(card.position);
+            redCross.setParent(this.node.getChildByName("ChangeCardShow"));
+            console.log(cardNum,"调整更换手牌坐标>>",index,posX);
+        }
+    }
+    selectChangeCard(uid:number){
+        let redCross=this.node.getChildByName("ChangeCardShow").getChildByName(String(uid));
+        // console.log(redCross.active,"选中卡",uid);
+        if(redCross)    redCross.active=!redCross.active;
+    }
+    
     initHandCard(data:any,myself:boolean=true){
         console.log("初始化手牌",data.length);
         let parent=this.node.getChildByName(myself?"Bottom":"Top");
@@ -837,13 +912,38 @@ export class GameControl extends Component {
         // console.log(id,"富文本",arr);
     }
     showRichTextCard(value:string){
-        console.log("显示富文本卡牌",value)
+        console.log("显示富文本卡牌",value);
+        let id=parseInt(value);
+
+        let leftNode=this.node.getChildByName("CardShow").getChildByName("leftShowCard");
+        if(leftNode){
+            leftNode.getComponent(CardControl).changeData(id,0);
+            leftNode.active=true;
+        }else{
+            let c= instantiate(this.Card);
+            let node=this.node.getChildByName("CardShow");
+            c.name="leftShowCard";
+            c.setPosition(60-view.getVisibleSize().x/2,-250);
+            // c.setParent(this.node.getChildByName("CardShow"));
+            c.getComponent(CardControl).initData(0,id,0,node.children.length);
+            c.getComponent(CardControl).initParent(this.node.getChildByName("CardShow"));
+        }
+        
+        // tween(c).to(0.3,{scale:new Vec3(1.1,1.1,1)}).
+        // delay(dTime).
+        // call(() => { 
+        //     c.removeFromParent();
+        // }).
+        // start();
     }
     //===================服务器消息事件处理
     reqGameStart(data:any){
         console.log("服务器匹配成功事件 游戏开始",data);
         this.first=data.first;
+        this.gameState=data.gameState;
         this.node.getChildByName("RightTop").getChildByName("LbName").getComponent(Label).string=data.otherName;
+        this.node.getChildByName("ChangeCardShow").getChildByName("LabelFirst").getComponent(Label).string=this.first?"你是先攻":"你是后攻";
+        this.node.getChildByName("ChangeCardShow").active=true;
     }
     reqCardInfo(data:any){
         console.log("服务器卡牌信息事件 卡牌信息",data);
@@ -870,6 +970,19 @@ export class GameControl extends Component {
     }
     reqTurnStart(data:any){
         console.log("服务器回合开始事件 回合开始",data);
+        let dt=0.4;
+        if(this.gameState==2){//换牌状态特殊处理
+            dt=1;
+            this.gameState=3;
+            this.node.getChildByName("ChangeCardShow").active=false;
+            let handNode=this.node.getChildByName("Bottom");
+            let changeNode=this.node.getChildByName("ChangeCardShow").getChildByName("NodeCard");
+            for(let i=0;i<GameConfig.HANDCARD_COUNT;i++){   
+                changeNode.children[0].setParent(handNode)//设置parent为ChangeCardShow
+            }
+            this.updateHandCardPos();
+        }
+
         let lbNode=this.node.getChildByName("UIShow").getChildByName("LbMyturn");
         let lb=lbNode.getComponent(Label);
         lb.string=data.myTurn?"我的回合":"对方回合";
@@ -878,7 +991,7 @@ export class GameControl extends Component {
         lbNode.setScale(new Vec3(2,2));
         lbNode.active=true;
         tween(lbNode).to(0.3,{scale:new Vec3(1,1,1)}).
-            delay(0.2).
+            delay(dt).
             call(() => { 
                 lbNode.active=false;
             }).start();
@@ -1027,19 +1140,62 @@ export class GameControl extends Component {
         console.log("服务器P变化事件 HP变化",data);
         this.updateHP(data.hp,data.isMe);
     }
+    reqCardChangeHand(data:any){
+        console.log("服务器更换手牌事件 ",data);
+        this.node.getChildByName("ChangeCardShow").getChildByName("BtConfirm").active=false;
+        this.node.getChildByName("ChangeCardShow").getChildByName("LbResult").active=true;
+        let changeNode=this.node.getChildByName("ChangeCardShow").getChildByName("NodeCard");
+        for(const changeCard of changeNode.children){
+            let redCrossNode=this.node.getChildByName("ChangeCardShow").getChildByName(String(changeCard.getComponent(CardControl).uid));
+            if(redCrossNode){
+                console.log("<<<<<<<<<<<<<<<<<<<<<<移除红叉");
+                redCrossNode.removeFromParent();
+            }    
+        }    
+        let hNode=this.node.getChildByName("RightBottom");
+        for(let i=0;i<data.cardList.length;i++){
+            let uid=data.cardList[i];
+            let cardNew=data.newList[i];
+            if(uid){
+                for(const changeCard of changeNode.children){
+                    if(changeCard.getComponent(CardControl).uid==uid){
+                        let initPos=new Vec3(changeCard.position.x,changeCard.position.y);
+                        tween(changeCard).
+                        // to(0.3,{position:handPosition}).
+                        to(0.3,{position:hNode.position}).
+                        to(0.1,{scale:new Vec3(0, 0, 0)}).
+                        call(() => { 
+                            console.log("返回tween结束 更换卡牌数据 抽牌tween");
+                            changeCard.getComponent(CardControl).changeData(cardNew.id,cardNew.uid);
+                        }).
+                        to(0.1,{scale:new Vec3(1, 1, 1)}).
+                        to(0.3,{position:initPos}).
+                        call(() => { 
+                            console.log("抽牌tween完成");
+                        }).
+                        start();
+                    }
+                }
+                // let changeCard=this.node.getChildByName("ChangeCardShow").getChildByName(String(card));
+            }
+        }
+
+    }
 
     //触摸事件
     onTouchStart(e:EventTouch){
-        console.log("《《《《《《《《《《《《《《《《测试触摸事件");
+        console.log("onTouchStart《《《《《《《《《《《《《《《《测试触摸事件");
         // Toast.showTip("测试tip",new Vec3(e.getUILocation().x,e.getUILocation().y));
         // Toast.hideTip();
     }    
     onTouchEnd(e:EventTouch){
-        console.log("hide TIP《《《《《《《《《《《《《《《《测试触摸事件 ");
+        console.log("hide TIP onTouchEnd《《《《《《《《《《《《《《《《测试触摸事件 ");
         Toast.hideTip();
+        let node=this.node.getChildByName("CardShow").getChildByName("leftShowCard");
+        if(node) node.active=false;
     } 
     onTouchCancel(e:EventTouch){
-        console.log("hide TIP《《《《《《《《《《《《《《《《测试触摸事件 ");
+        console.log("hide TIP onTouchCancel《《《《《《《《《《《《《《《《测试触摸事件 ");
         Toast.hideTip();
     }  
     

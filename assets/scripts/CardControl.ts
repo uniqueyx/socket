@@ -29,6 +29,7 @@ export class CardControl extends Component {
         this.node.getChildByName("CardBg").on(NodeEventType.TOUCH_END,this.onTouchEnd,this);
         this.node.getChildByName("CardBg").on(NodeEventType.TOUCH_CANCEL,this.onTouchCancel,this);
         
+        this.node.getChildByName("ForceBg").on(NodeEventType.TOUCH_START,this.onForceTouchStart,this);
     }
     
     start() {
@@ -63,6 +64,18 @@ export class CardControl extends Component {
         this.baseData=GameConfig.getCardDataById(id);
         // this.baseData.need=JSON.parse(this.baseData.need);//json解析特招条件
         console.log("initData>>>basedata",this.baseData);
+        this.showBase();
+    }
+    //改变卡牌 uid id
+    changeData(id:number=0,uid:number=0){
+        this.uid=uid;
+        this.buffList=[];
+        if(id==undefined||id==0){
+            this.showBack(true);
+            return;
+        }
+        this.baseData=GameConfig.getCardDataById(id);
+        // console.log("initData>>>basedata",this.baseData);
         this.showBase();
     }
     //处理buff等效果显示
@@ -214,6 +227,8 @@ export class CardControl extends Component {
         this.node.getChildByName("CardBg").getComponent(Sprite).changeSpriteFrameFromAtlas("cardBg"+this.baseData.cardType);
         this.node.getChildByName("CardEdge").getComponent(Sprite).changeSpriteFrameFromAtlas("edge"+this.baseData.rare);
         this.node.getChildByName("AttackBg").active=this.baseData.cardType==1;//武将卡显示攻击力
+        this.node.getChildByName("ForceBg").active=this.baseData.force>0;
+        this.node.getChildByName("ForceBg").getChildByName("LbForce").getComponent(Label).string=GameConfig.FORCE_NAME_ICON[this.baseData.force];
         this.updateAttack();
     }
     //获取实际攻击力
@@ -238,6 +253,9 @@ export class CardControl extends Component {
         if(buff)    Toast.showTip(GameConfig.getBuffString(buff.id,buff.value),e.getUILocation());
         //event.stopPropagation();  
     }    
+    onForceTouchStart(e:EventTouch){
+        Toast.showTip(GameConfig.FORCE_NAME[this.baseData.force]+"势力",e.getUILocation());
+    }
     onBuffTouchEnd(e:EventTouch){
         Toast.hideTip();
     }  
@@ -246,6 +264,7 @@ export class CardControl extends Component {
     }    
     //卡牌触摸
     onTouchStart(e:EventTouch){
+        if(!this.gameControl||this.gameControl.gameState==2) return;
         this.initPos=new Vec3(this.node.position);//.x,this.node.position.y
         this.initIndex=this.node.getSiblingIndex();
         if(this.posType==1){
@@ -254,11 +273,11 @@ export class CardControl extends Component {
             //GameEvent.Instance.emit("updateCardIndex",{index:this.index,sIndex:this.node.getSiblingIndex()});
             this.node.setPosition(this.node.position.x,this.node.position.y+40);
         }    
-        console.log(this.node.getSiblingIndex(),"=========touch start",this.node.position);
-        console.log(this.node.getWorldPosition().x,this.node.getWorldPosition().y,"touchstart",e.getLocation(),e.getUILocation());
-        // console.log("card pos",this.node.position)
+        // console.log(this.node.getSiblingIndex(),"=========touch start",this.node.position);
+        // console.log(this.node.getWorldPosition().x,this.node.getWorldPosition().y,"touchstart",e.getLocation(),e.getUILocation());
     }
     onTouchMove(e:EventTouch){
+        if(!this.gameControl||this.gameControl.gameState==2) return;
         // if(this.posType==2) console.log("e>>touchmove",e);
         // let location = e.getDelta()
         if(this.posType==1&&this.gameControl.myTurn){//手牌可拖动 出牌
@@ -283,6 +302,10 @@ export class CardControl extends Component {
         
     }
     onTouchEnd(e:EventTouch){
+        if(this.gameControl&&this.gameControl.gameState==2) {
+            this.gameControl.selectChangeCard(this.uid);
+            return;
+        }
         // console.log(this.node.position.y,this.initPos.y,">>>end>>",e);
         // console.log(this.node.getParent().getParent().getComponent(GameControl),"<<game");
         if(this.posType==2) {//我的回合我的桌上的武将卡
@@ -303,7 +326,8 @@ export class CardControl extends Component {
          }
     }
     onTouchCancel(e:EventTouch){
-        console.log(">>>cancel>>",e);
+        if(!this.gameControl||this.gameControl.gameState==2) return;
+        // console.log(">>>cancel>>",e);
         if(this.posType==2) {//我的回合我的桌上的武将卡
             let uinode = this.node.getParent().getComponent(UITransform);
             let touchPos=new Vec3(e.getUILocation().x,e.getUILocation().y);

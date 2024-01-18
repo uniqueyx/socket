@@ -15,8 +15,13 @@ export default class GameConfig{
   static BUFF_SHIELD=102;//圣盾
   static BUFF_ATTACK=401;//攻击变化
 
+  //卡牌稀有度色值
   static COLOR_RARE:Color[]=[Color.WHITE,new Color(33,200,0),Color.BLUE,new Color(255,0,228),new Color(202,126,54)];
   static COLOR_RARE16:string[]=["#ffffff","#21c800","#0000ff","#ff00ff","#ca7e36"];
+
+  //势力名
+  static FORCE_NAME:string[]=["","黄巾","东汉","十常侍"];
+  static FORCE_NAME_ICON:string[]=["","黄","汉","十"];
   
   //静态方法
   static getCardDataById(id:number):any{
