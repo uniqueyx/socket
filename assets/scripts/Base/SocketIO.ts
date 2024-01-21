@@ -17,7 +17,7 @@ export class SocketIO extends Singleton {
     constructor() {
         super();
         console.log('init socket1')
-        this.socket=io('192.168.101.8:3005');//http://localhost:3005
+        this.socket=io('192.168.101.8:3005');//http://localhost:3005   192.168.101.8:3005    192.168.2.152:3005
         console.log('init socket')
 
         this.socket.on('connect', (data: any) => {

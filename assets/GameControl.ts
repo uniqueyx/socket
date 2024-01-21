@@ -240,9 +240,15 @@ export class GameControl extends Component {
                 if(effect.noself==1)
                 continue;//破坏卡默认排除自身 判断301破坏 401添加buff 501
             }    
+            if(!cardPoolOne.baseData) {//陷阱卡特殊判断
+                if(this.judgeCondition("cardType",effect.cardType,3)){
+                    cardPoolNew.push(cardPoolOne);
+                }
+                continue;
+            }    
             if(this.judgeCondition("cardType",effect.cardType,cardPoolOne.baseData.cardType)&&this.judgeCondition("force",effect.force,cardPoolOne.baseData.force)&&
             this.judgeCondition("rare",effect.rare,cardPoolOne.baseData.rare)&&this.judgeCondition("name",effect.name,cardPoolOne.baseData.name)&&
-            this.judgeCondition("atk",effect.atk,effect.pos==4?cardPoolOne.baseData.attack:cardPoolOne.getAttack()) ){
+            this.judgeCondition("hasBuff",effect.hasBuff,effect.pos==4?1:cardPoolOne.getBuff(effect.hasBuff).length)&&this.judgeCondition("atk",effect.atk,effect.pos==4?cardPoolOne.baseData.attack:cardPoolOne.getAttack()) ){
                 cardPoolNew.push(cardPoolOne);
             }
         }
@@ -256,6 +262,9 @@ export class GameControl extends Component {
             case "cardType":
                 if(String(condition).indexOf(String(value))!=-1) return true;
                 break;
+            case "hasBuff":
+                if(value>=1) return true;
+                break;      
             case "force": 
             // case "rare":
             case "name":
@@ -283,8 +292,6 @@ export class GameControl extends Component {
         if(!this.myTurn) {
             return false;
         }    
-        
-        
         if(cardControl.baseData.cardType==1&&this.getTableCardList(1).length==GameConfig.TABLEGENERAL_LIMIT){
             console.log("场上武将卡已经满了");
             Toast.toast("场上武将数量达到上限！");
@@ -314,7 +321,14 @@ export class GameControl extends Component {
             }  
             console.log(cardControl.index,"特招判断>",judgeNeedResult,this.useGeneralTimes,"<<<cardControl  发送卡牌消息");
         }
-        
+        //判断同名陷阱卡
+        if(cardControl.baseData.cardType==3){
+            if(this.getTableCardByID(cardControl.baseData.id).length>0){
+                Toast.toast("场上已存在相同陷阱卡!");
+                return;
+            }
+        }
+
         //发送使用卡牌消息
         SocketIO.Instance.socket.emit("GAME", {
             type: "card_use",
@@ -334,12 +348,12 @@ export class GameControl extends Component {
         }    
         if(!nodeArrow.active)   nodeArrow.active=true;
         let arrowSize=nodeArrow.getComponent(UITransform).contentSize;
-        console.log(distance,"<<攻击长度");
+        // console.log(distance,"<<攻击长度");
         this.node.getChildByName("attackArrow").setPosition(startPos);
         this.node.getChildByName("attackArrow").getComponent(UITransform).setContentSize(new Size(distance<min?min:distance,arrowSize.height));
         let rotation = Math.atan2(endPos.y - startPos.y, endPos.x - startPos.x);
         let angle=rotation/(Math.PI/180);  
-        console.log(rotation,"<<<弧度箭头角度",angle);
+        // console.log(rotation,"<<<弧度箭头角度",angle);
         this.node.getChildByName("attackArrow").setRotationFromEuler(new Vec3(0, 0, angle));//-90
     }
     hideArrow(){
@@ -372,7 +386,7 @@ export class GameControl extends Component {
         }
         //判断对面无怪直接攻击
         if(targetUid>0||(this.getTableCardList(1,false).length==0&&endPos.y>60)){
-            if(attackC.attackCount<=0){
+            if(attackC.attackCount<=attackC.attackedCount){
                 Toast.toast("该武将已经攻击过了");
                 return;
             }
@@ -526,15 +540,15 @@ export class GameControl extends Component {
     //调整桌面召唤的卡牌间隔坐标
     updateTableCardPos(cardType:number,myself:boolean=true){
         // let node=this.node.getChildByName(myself?"Bottom":"Top");
-        let arrNode=this.getTableCardList(1,myself);
-        console.log("updateTableCardPos   getTableCardList 数组长度",arrNode.length);
+        let arrNode=this.getTableCardList(cardType,myself);//1
+        console.log(cardType,"updateTableCardPos   getTableCardList 数组长度",arrNode.length);
         let width=720;
         let cardHalf=60;
         let cardNum=arrNode.length;
         
         let apart=10;//-cardHalf*2
         // if(cardNum>4) apart=(width-cardHalf*2)/(cardNum-1);
-        let posY=cardType==1?-120:(-120-cardHalf*2-5);
+        let posY=cardType==1?-120:(-120-180-30-5);
         if(!myself) posY=-posY;
         for(let i=0;i< arrNode.length;i++){
             let card=arrNode[i];
@@ -545,7 +559,7 @@ export class GameControl extends Component {
                 posX=-posX;
             }    
             card.setPosition(posX,posY);
-            console.log(cardNum,card.getComponent(CardControl).uid,"数量",myself,"场上坐标>>",index,posX);
+            console.log(cardNum,card.getComponent(CardControl).uid,"数量",myself,index,"场上坐标>>",posX,posY);
         }
     }
     //移除场上牌
@@ -556,7 +570,7 @@ export class GameControl extends Component {
         for(const card of node.children){
             if(card.getComponent(CardControl).uid==uid){
                 index=card.getComponent(CardControl).index;
-                cardType=card.getComponent(CardControl).baseData.cardType;
+                cardType=card.getComponent(CardControl).baseData?card.getComponent(CardControl).baseData.cardType:2;
                 if(card.getComponent(CardControl).state==1){//攻击动效中 延迟移除
                     console.log(uid,"=======state设置成2",myself);
                     card.getComponent(CardControl).state=2;
@@ -567,9 +581,14 @@ export class GameControl extends Component {
         }
         for(const card of node.children){
             let cardC=card.getComponent(CardControl);
-            if((cardC.baseData.cardType==cardType||(cardC.baseData.cardType>1&&cardType>1))&&cardC.posType==(myself?2:12)&&cardC.index>index){
-                cardC.index--;
+            if(cardC.posType==(myself?2:12)&&cardC.index>index){
+                if( (cardType==1&&cardC.baseData.cardType==cardType) || (cardType>1&&(!cardC.baseData|| (cardC.baseData&&cardC.baseData.cardType>1) ) ) ){
+                    cardC.index--;
+                }
             }
+            // if(cardC.baseData&&(cardC.baseData.cardType==cardType||(cardC.baseData.cardType>1&&cardType>1))&&cardC.posType==(myself?2:12)&&cardC.index>index){
+            //     cardC.index--;
+            // }
         }
         this.updateTableCardPos(cardType,myself);
         console.log("==removeTableCard 移除牌后数量",node.children);
@@ -752,12 +771,12 @@ export class GameControl extends Component {
         let value=myself?1:-1;
         label.node.setPosition((5+0.4*(remainNode.children.length-1))*value,0.4*(remainNode.children.length-1));
     }
-    //召唤卡牌
+    //召唤卡牌 放置陷阱卡
     addTableCard(data:any,updateType:number,myself:boolean=true){
         let value=myself?1:-1;
         let c= instantiate(this.Card);
         // c.setParent(this.cardTable);
-        c.getComponent(CardControl).initData(myself?2:12,data.id,data.uid,this.getTableCardList(1,myself).length);
+        c.getComponent(CardControl).initData(myself?2:12,data.id,data.uid,this.getTableCardList(updateType,myself).length);
         c.getComponent(CardControl).initParent(this.cardTable);
         if(data)    c.getComponent(CardControl).updateData(data);
         this.updateTableCardPos(updateType,myself);
@@ -792,15 +811,16 @@ export class GameControl extends Component {
     getTableCardList(cardType:number,myself:boolean=true):any[]{
         let arr=[];
         for(const card of this.cardTable.children){
-            if(card.getComponent(CardControl).baseData &&card.getComponent(CardControl).posType==(myself?2:12)){
+            if(card.getComponent(CardControl).posType==(myself?2:12)){//card.getComponent(CardControl).baseData &&
                 if(cardType==0){
                     arr.push(card);
                 }else if(cardType==1){
-                    if(card.getComponent(CardControl).baseData.cardType==1){
+                    if(card.getComponent(CardControl).baseData&&card.getComponent(CardControl).baseData.cardType==1){
                         arr.push(card);
                     }
                 }else{
-                    if(card.getComponent(CardControl).baseData.cardType>1){
+                    //魔法陷阱卡 放置的可能没有baseData数据 需要特殊判断
+                    if(!card.getComponent(CardControl).baseData||card.getComponent(CardControl).baseData.cardType>1){
                         arr.push(card);
                     }
                 }
@@ -816,6 +836,18 @@ export class GameControl extends Component {
         }  
         console.log("=============>是否有BUG  getTableCardByUID没找到card",uid);
         return null;  
+    }
+    getTableCardByID(id:number,myself:boolean=true):any[]{
+        let arr=[];
+        for(const card of this.cardTable.children){
+            if(card.getComponent(CardControl).posType==(myself?2:12)){
+                if(card.getComponent(CardControl).baseData&&card.getComponent(CardControl).baseData.id==id){
+                    arr.push(card);
+                }
+            }
+        }  
+        console.log("=============>根据id 没找到card",id);
+        return arr;  
     }
     //确定按钮 返回主页
     onBtConfirm(){
@@ -850,7 +882,8 @@ export class GameControl extends Component {
                     card.removeFromParent();
                     for(const cardT of this.cardTable.children){
                         let cardC=cardT.getComponent(CardControl);
-                        if((cardC.baseData.cardType==cType||(cardC.baseData.cardType>1&&cType>1))&&cardC.posType==(myself?2:12)&&cardC.index>index){
+                        //攻击暂时只需要判断 武将卡 调整
+                        if(cardC.baseData&&(cardC.baseData.cardType==cType||(cardC.baseData.cardType>1&&cType>1))&&cardC.posType==(myself?2:12)&&cardC.index>index){
                             cardC.index--;
                         }
                     }
@@ -889,7 +922,7 @@ export class GameControl extends Component {
         let cardList= this.getTableCardList(1);
         for(let i=0;i<cardList.length;i++){
             let cardOne=cardList[i];
-            cardOne.getComponent(CardControl).initAttackCount(1);
+            cardOne.getComponent(CardControl).initAttackCount();
         }
     }
     //加入富文本
@@ -900,8 +933,12 @@ export class GameControl extends Component {
         let newStr=this.actString==""?"":"<br/>";
         newStr+=myself?"我":"<color=#ff>敌</color>";
         // newStr+=baseData.cardName;
-        newStr+="<u><i><b><color="+GameConfig.COLOR_RARE16[baseData.rare]+" click='cardClick' param='"+baseData.id+"'>"+baseData.cardName+"</color></b></i></u>";
-        
+        if(id){
+            newStr+="<u><i><b><color="+GameConfig.COLOR_RARE16[baseData.rare]+" click='cardClick' param='"+baseData.id+"'>"+baseData.cardName+"</color></b></i></u>";
+        }else{
+            newStr+="<u><i><b><color="+GameConfig.COLOR_RARE16[3]+" click='cardClick' param='"+0+"'>"+"陷阱卡"+"</color></b></i></u>";
+        }
+       
         this.actString+=newStr;
         let arr=this.actString.split("<br/>");
         if(arr.length==11){
@@ -914,6 +951,10 @@ export class GameControl extends Component {
     showRichTextCard(value:string){
         console.log("显示富文本卡牌",value);
         let id=parseInt(value);
+        if(id==0){
+            // Toast.showTip("陷阱卡(对方回合满足条件会触发)");
+            return;
+        }
 
         let leftNode=this.node.getChildByName("CardShow").getChildByName("leftShowCard");
         if(leftNode){
@@ -935,6 +976,26 @@ export class GameControl extends Component {
         //     c.removeFromParent();
         // }).
         // start();
+    }
+
+    //显示陷阱卡发动效果
+    showTrapCard(uid:number,id:number){
+        console.log(uid,"<<<陷阱卡发动啦",id)
+        let card=this.getTableCardByUID(uid);
+        let c= instantiate(this.Card);
+            let node=this.node.getChildByName("CardShow");
+            c.setPosition(card.position);//0,view.getVisibleSize().y/2-150
+            // c.setParent(this.node.getChildByName("CardShow"));
+            c.getComponent(CardControl).initData(0,id,0,node.children.length);
+            c.getComponent(CardControl).initParent(this.node.getChildByName("CardShow"));
+            let dTime=1.5;
+            // if(data.id>20000&&data.id<30000) dTime=1.2;
+            tween(c).to(0.3,{scale:new Vec3(1.1,1.1,1)}).
+            delay(dTime).
+            call(() => { 
+                c.removeFromParent();
+            }).
+            start();
     }
     //===================服务器消息事件处理
     reqGameStart(data:any){
@@ -1035,8 +1096,6 @@ export class GameControl extends Component {
                 c.removeFromParent();
             }).
             start();
-            
-            
         }
         //加入左侧富文本
         this.addRichText(data.id,data.isMe);
@@ -1048,7 +1107,7 @@ export class GameControl extends Component {
         let target=this.getTableCardByUID(data.target);//target不存在 直接攻击
         let myself=data.isMe;
         //攻击次数-1
-        card.getComponent(CardControl).changeAttackCount(-1);
+        card.getComponent(CardControl).changeAttackCount();
         //攻击动效
         card.getComponent(CardControl).state=1;
         let pos=new Vec3(card.position.x,card.position.y);
@@ -1090,7 +1149,7 @@ export class GameControl extends Component {
         
         
     }
-    //isMe  uid   value卡牌信息    updateType(3 2 1 0 -1 -2 -3) 1召唤武将 2获得 3放置陷阱 -1破坏 -2返回手卡 -3返回卡组 
+    //isMe  uid   value卡牌信息    updateType(3 2 1 0 -1 -2 -3 -4) 1召唤武将 2获得 3放置陷阱 -1破坏 -2返回手卡 -3返回卡组 -4陷阱卡发动
     reqCardUpdate(data:any){
         console.log(">>>>服务器卡牌更新事件 卡牌更新",data);
         if(data.updateType==1){
@@ -1098,13 +1157,28 @@ export class GameControl extends Component {
         }else if(data.updateType==-1){
             console.log(data.uid,"卡牌破坏",data.isMe);
             this.removeTableCard(data.uid,data.isMe);
+            //处理消失效果 陷阱卡被破坏
+
         }else if(data.updateType==-2){
             console.log(data.uid,"卡牌返回手卡",data.isMe);
             this.tableToHand(data.uid,data.isMe);
-        }
-        else if(data.updateType==-3){
+        }else if(data.updateType==-3){
             console.log(data.uid,"卡牌返回卡组",data.isMe);
             this.tableToRemain(data.uid,data.isMe);
+        }else if(data.updateType==-4){
+            console.log(data.uid,"陷阱卡发动效果",data.isMe);
+            this.showTrapCard(data.value.uid,data.value.id);
+            this.removeTableCard(data.uid,data.isMe);
+            //加入左侧富文本
+            this.addRichText(data.value.id,data.isMe);
+        }else if(data.updateType==3){
+            console.log(data.uid,"卡牌使用",data.isMe);
+            this.addTableCard(data.value,3,data.isMe);
+        }else if(data.updateType==4){
+            console.log(data.uid,"陷阱卡效果发动",data.isMe);
+            //处理发动显示效果
+
+            this.removeTableCard(data.uid,data.isMe);
         }
         else if(data.updateType==2){
             console.log(data.uid,"获得卡",data.isMe,data.value);
@@ -1138,6 +1212,7 @@ export class GameControl extends Component {
     }
     reqHPUpdate(data:any){
         console.log("服务器P变化事件 HP变化",data);
+        if(data.hp==0) return;
         this.updateHP(data.hp,data.isMe);
     }
     reqCardChangeHand(data:any){

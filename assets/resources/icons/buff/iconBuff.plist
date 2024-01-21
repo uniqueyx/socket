@@ -17,10 +17,23 @@
         <key>sourceSize</key>
         <string>{51,50}</string>
       </dict>
-      <key>101.png</key>
+      <key>103.png</key>
       <dict>
         <key>frame</key>
-        <string>{{54,1},{50,50}}</string>
+        <string>{{54,1},{48,51}}</string>
+        <key>offset</key>
+        <string>{-0.5,0}</string>
+        <key>rotated</key>
+        <true/>
+        <key>sourceColorRect</key>
+        <string>{{0,0},{48,51}}</string>
+        <key>sourceSize</key>
+        <string>{49,51}</string>
+      </dict>
+      <key>102.png</key>
+      <dict>
+        <key>frame</key>
+        <string>{{107,1},{50,50}}</string>
         <key>offset</key>
         <string>{0,0}</string>
         <key>rotated</key>
@@ -30,10 +43,10 @@
         <key>sourceSize</key>
         <string>{50,50}</string>
       </dict>
-      <key>102.png</key>
+      <key>105.png</key>
       <dict>
         <key>frame</key>
-        <string>{{106,1},{50,50}}</string>
+        <string>{{54,51},{50,50}}</string>
         <key>offset</key>
         <string>{0,0}</string>
         <key>rotated</key>
@@ -46,7 +59,7 @@
       <key>401.png</key>
       <dict>
         <key>frame</key>
-        <string>{{158,1},{50,50}}</string>
+        <string>{{1,53},{50,50}}</string>
         <key>offset</key>
         <string>{0,0}</string>
         <key>rotated</key>
@@ -55,6 +68,32 @@
         <string>{{0,0},{50,50}}</string>
         <key>sourceSize</key>
         <string>{50,50}</string>
+      </dict>
+      <key>101.png</key>
+      <dict>
+        <key>frame</key>
+        <string>{{159,1},{49,50}}</string>
+        <key>offset</key>
+        <string>{0,0}</string>
+        <key>rotated</key>
+        <true/>
+        <key>sourceColorRect</key>
+        <string>{{0,0},{49,50}}</string>
+        <key>sourceSize</key>
+        <string>{49,50}</string>
+      </dict>
+      <key>104.png</key>
+      <dict>
+        <key>frame</key>
+        <string>{{211,1},{49,50}}</string>
+        <key>offset</key>
+        <string>{0,0}</string>
+        <key>rotated</key>
+        <true/>
+        <key>sourceColorRect</key>
+        <string>{{0,0},{49,50}}</string>
+        <key>sourceSize</key>
+        <string>{49,50}</string>
       </dict>
     </dict>
     <key>metadata</key>
@@ -68,7 +107,7 @@
       <key>realTextureFileName</key>
       <string>iconBuff.png</string>
       <key>size</key>
-      <string>{209,52}</string>
+      <string>{262,104}</string>
       <key>textureFileName</key>
       <string>iconBuff</string>
     </dict>

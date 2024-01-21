@@ -1,4 +1,4 @@
-import { _decorator, Component, Node, NodeEventType, EventTouch, UITransform, Vec3, Label, Sprite, Prefab, instantiate, CCBoolean, SpriteFrame, resources, tween } from 'cc';
+import { _decorator, Component, Node, NodeEventType, EventTouch, UITransform, Vec3, Label, Sprite, Prefab, instantiate, CCBoolean, SpriteFrame, resources, tween, TERRAIN_HEIGHT_BASE } from 'cc';
 import { GameControl } from '../GameControl';
 import GameConfig from './Base/GameConfig';
 import GameEvent from './Base/GameEvent';
@@ -21,6 +21,7 @@ export class CardControl extends Component {
     buffList:any[];//buff
     state:number;//1攻击动画中
     attackCount:number;//攻击次数
+    attackedCount:number;//已攻击次数
     gameControl:GameControl;//游戏对战控制类
     onLoad(){
         console.log("<<<<<<<<<<init card");
@@ -65,6 +66,10 @@ export class CardControl extends Component {
         // this.baseData.need=JSON.parse(this.baseData.need);//json解析特招条件
         console.log("initData>>>basedata",this.baseData);
         this.showBase();
+        //场上陷阱卡特殊处理 盖放
+        if(posType==2&&this.baseData&&this.baseData.cardType==3){
+            this.showBack(true);
+        }
     }
     //改变卡牌 uid id
     changeData(id:number=0,uid:number=0){
@@ -78,10 +83,9 @@ export class CardControl extends Component {
         // console.log("initData>>>basedata",this.baseData);
         this.showBase();
     }
-    //处理buff等效果显示
+    //处理buff等效果显示  召唤成功触发
     updateData(data:any){
         this.uid=data.uid;
-        this.initAttackCount(1);//攻击次数暂时默认1
         // if(this.pos)
         // this.updateBuffPos();
         // for(let i=0;i<this.buffList.length;i++){
@@ -93,21 +97,28 @@ export class CardControl extends Component {
             // let posX=( i* (15+0)*2) - (this.buffList.length-1)*(15+0);
             // b.setPosition(posX,0);
         // }
-        for(let i=0;i<data.buffList.length;i++){
-            let buffOne=data.buffList[i];
-            this.addBuff(buffOne.uid,buffOne.id,buffOne.value);
+        if(data.buffList){
+            for(let i=0;i<data.buffList.length;i++){
+                let buffOne=data.buffList[i];
+                this.addBuff(buffOne.uid,buffOne.id,buffOne.value);
+            }
         }
+        this.initAttackCount();//攻击次数暂时默认1
         console.log("updateData>>",this.buffList.length)
         // posX=( index* (cardHalf+apart)*2) - (cardNum-1)*(cardHalf+apart);
     }
     //初始化重置攻击次数
-    initAttackCount(value:number=1){
-        this.attackCount=value;
+    initAttackCount(onlyUpdate:boolean=false){
+        //判断是否有105双击
+        this.attackCount=this.getBuff(GameConfig.BUFF_DOUBLE).length>0?2:1;
+        if(!onlyUpdate)     this.attackedCount=0;
+        // this.attackCount=value;
     }
     //改变攻击次数
-    changeAttackCount(value:number){
-        this.attackCount+=value;
-        if(this.attackCount<0) this.attackCount=0;
+    changeAttackCount(){
+        this.attackedCount++;
+        // this.attackCount+=value;
+        // if(this.attackCount<0) this.attackCount=0;
     }
     //添加buff
     addBuff(uid:number,buffId:number,value:number){
@@ -128,6 +139,7 @@ export class CardControl extends Component {
             if(value<0) spriteFrameStr+="_1";
             this.updateAttack();
         }
+        if(buffId==GameConfig.BUFF_DOUBLE) this.attackCount=2;
         b.getComponent(Sprite).changeSpriteFrameFromAtlas(spriteFrameStr);
         // let posX=( index* (15+0)*2) - (this.buffList.length-1)*(15+0);
         // b.setPosition(posX,0);
@@ -183,6 +195,7 @@ export class CardControl extends Component {
         if(buffId==GameConfig.BUFF_ATTACK){
             this.updateAttack();
         }  
+        this.initAttackCount(true);
     }
     //获取buff
     getBuff(buffId:number){
@@ -219,9 +232,12 @@ export class CardControl extends Component {
     }
     //显示基础信息
     showBase(){
-        this.node.getChildByName("LbName").getComponent(Label).string=this.baseData.cardName;
-        this.node.getChildByName("LbName").getComponent(Label).color=GameConfig.COLOR_RARE[this.baseData.rare]
+        
+        this.node.getChildByName("LbName").getComponent(Label).color=GameConfig.COLOR_RARE[this.baseData.rare];
+        let posX=(this.baseData.cardType==1||this.baseData.force==0)?0:-15;
+        this.node.getChildByName("LbName").setPosition(posX,this.node.getChildByName("LbName").position.y)
         this.node.getChildByName("LbName").getComponent(UITransform).width=this.baseData.cardType==1?60:90;
+        this.node.getChildByName("LbName").getComponent(Label).string=this.baseData.cardName;
         this.node.getChildByName("Info").getComponent(Label).string=this.baseData.info;
         // this.node.getChildByName("LbAttack").getComponent(Label).string=this.getAttack();
         this.node.getChildByName("CardBg").getComponent(Sprite).changeSpriteFrameFromAtlas("cardBg"+this.baseData.cardType);
@@ -273,6 +289,10 @@ export class CardControl extends Component {
             //GameEvent.Instance.emit("updateCardIndex",{index:this.index,sIndex:this.node.getSiblingIndex()});
             this.node.setPosition(this.node.position.x,this.node.position.y+40);
         }    
+        //判断显示我的陷阱卡信息
+        if(this.posType==2&&(this.baseData&&this.baseData.cardType>1)) {
+            this.gameControl.showRichTextCard(String(this.baseData.id));
+        }    
         // console.log(this.node.getSiblingIndex(),"=========touch start",this.node.position);
         // console.log(this.node.getWorldPosition().x,this.node.getWorldPosition().y,"touchstart",e.getLocation(),e.getUILocation());
     }
@@ -286,12 +306,11 @@ export class CardControl extends Component {
             this.node.setPosition(newX,newY);
             // console.log("move后坐标",this.node.position);
         }
-        if(this.posType==2&&this.gameControl.myTurn) {
-            console.log("e>>touchmove",e);
+        if(this.posType==2&&this.gameControl.myTurn&&this.baseData&&this.baseData.cardType==1) {
+            // console.log("e>>touchmove",e);
             let uinode = this.node.getParent().getComponent(UITransform);
             let touchPos=new Vec3(e.getUILocation().x,e.getUILocation().y);
-            console.log(uinode.convertToNodeSpaceAR(touchPos),"<世界转ui坐标",this.node.position.x,this.node.position.y);
-            // this.node.convertToNodeSpaceAR()
+            // console.log(uinode.convertToNodeSpaceAR(touchPos),"<世界转ui坐标",this.node.position.x,this.node.position.y);
             this.gameControl.showAttackArrow(this.node.position,uinode.convertToNodeSpaceAR(touchPos));
         }    
         // let pos2=e.getLocation();
@@ -332,7 +351,9 @@ export class CardControl extends Component {
             let uinode = this.node.getParent().getComponent(UITransform);
             let touchPos=new Vec3(e.getUILocation().x,e.getUILocation().y);
             this.gameControl.hideArrow();
-            if(this.gameControl.myTurn)this.gameControl.judgeAttack(this,uinode.convertToNodeSpaceAR(touchPos));
+            if(this.gameControl.myTurn&&this.baseData&&this.baseData.cardType==1){//武将卡判断攻击
+                this.gameControl.judgeAttack(this,uinode.convertToNodeSpaceAR(touchPos));
+            }    
         }  
         if(this.posType==1){
             this.node.setPosition(this.initPos);

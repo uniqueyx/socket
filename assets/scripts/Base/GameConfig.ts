@@ -13,6 +13,9 @@ export default class GameConfig{
   //buff
   static BUFF_TAUNT=101;//嘲讽
   static BUFF_SHIELD=102;//圣盾
+  static BUFF_PROTECT=103;//守护
+  static BUFF_DEFENSE=104;//铁壁
+  static BUFF_DOUBLE=105;//双击
   static BUFF_ATTACK=401;//攻击变化
 
   //卡牌稀有度色值
@@ -20,8 +23,8 @@ export default class GameConfig{
   static COLOR_RARE16:string[]=["#ffffff","#21c800","#0000ff","#ff00ff","#ca7e36"];
 
   //势力名
-  static FORCE_NAME:string[]=["","黄巾","东汉","十常侍"];
-  static FORCE_NAME_ICON:string[]=["","黄","汉","十"];
+  static FORCE_NAME:string[]=["","黄巾","东汉","十常侍","盗贼"];
+  static FORCE_NAME_ICON:string[]=["","黄","汉","十","盗"];
   
   //静态方法
   static getCardDataById(id:number):any{
@@ -34,10 +37,19 @@ export default class GameConfig{
     switch(id){
         case this.BUFF_TAUNT:
           str="嘲讽(必须先攻击嘲讽武将)";
-        break;
+          break;
         case this.BUFF_SHIELD:
           str="圣盾(免除一次战斗破坏)";
           break;  
+        case this.BUFF_PROTECT:
+          str="守护(不会被效果破坏)";
+          break;
+        case this.BUFF_DEFENSE:
+          str="铁壁(战斗受到士气伤害为0)";
+          break;  
+          case this.BUFF_DOUBLE:
+            str="双击(攻击两次)";
+            break;        
         case this.BUFF_ATTACK:
           str="攻击"+(value<0?"-"+value:"+"+value);
           break;   
