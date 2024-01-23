@@ -1,4 +1,4 @@
-import { _decorator, Component, Node, NodeEventType, EventTouch, UITransform, Vec3, Label, Sprite, Prefab, instantiate, CCBoolean, SpriteFrame, resources, tween, TERRAIN_HEIGHT_BASE } from 'cc';
+import { _decorator, Component, Node, NodeEventType, EventTouch, UITransform, Vec3, Label, Sprite, Prefab, instantiate, CCBoolean, SpriteFrame, resources, tween, TERRAIN_HEIGHT_BASE, Material } from 'cc';
 import { GameControl } from '../GameControl';
 import GameConfig from './Base/GameConfig';
 import GameEvent from './Base/GameEvent';
@@ -23,6 +23,12 @@ export class CardControl extends Component {
     attackCount:number;//攻击次数
     attackedCount:number;//已攻击次数
     gameControl:GameControl;//游戏对战控制类
+
+    //shader
+    duration: number = 0.5;//0.5
+    _median: number = 0;
+    _time: number = 0;
+    _material: Material = null!;
     onLoad(){
         console.log("<<<<<<<<<<init card");
         this.node.getChildByName("CardBg").on(NodeEventType.TOUCH_START,this.onTouchStart,this);
@@ -31,6 +37,15 @@ export class CardControl extends Component {
         this.node.getChildByName("CardBg").on(NodeEventType.TOUCH_CANCEL,this.onTouchCancel,this);
         
         this.node.getChildByName("ForceBg").on(NodeEventType.TOUCH_START,this.onForceTouchStart,this);
+        
+        //shader
+        this._median = this.duration / 2;
+        // 获取材质，此处获取的是共享材质，即所有使用同一个材质的组件，会同步修改
+        // this._material = this.node.getChildByName("CardBg").getComponent(Sprite)!.getSharedMaterial(0)!;
+        // 如果需要修改单一材质属性，那么通过 获取材质示例来修改
+        this._material = this.node.getChildByName("CardBg").getComponent(Sprite)!.getMaterialInstance(0)!;//getSharedMaterialInstance
+        // 设置材质对应的属性
+        this._material.setProperty("u_rate", 1);
     }
     
     start() {
@@ -44,7 +59,13 @@ export class CardControl extends Component {
         this.node.getChildByName("CardBg").off(NodeEventType.TOUCH_CANCEL,this.onTouchCancel,this);
     }
     update(deltaTime: number) {
-        
+        if (this._time > 0) {
+            this._time -= deltaTime;
+
+            this._time = this._time < 0 ? 0 : this._time;
+            let rate = Math.abs(this._time - this._median) * 2 / this.duration;
+            this._material.setProperty("u_rate", rate);
+        }
     }
     //====方法事件
     //初始化数据
@@ -80,6 +101,7 @@ export class CardControl extends Component {
             return;
         }
         this.baseData=GameConfig.getCardDataById(id);
+        if(this.baseData) this.showBack(false);
         // console.log("initData>>>basedata",this.baseData);
         this.showBase();
     }
@@ -146,17 +168,28 @@ export class CardControl extends Component {
         this.updateBuffPos();
         this.buffEffect(spriteFrameStr);
     }
-    buffEffect(spriteFrameStr:string){
+    buffEffect(spriteFrameStr:string,tweenType:number=0){
+
+        let initScale=tweenType?3:4;
+        // let targetScale=tweenType?4:1;
         let b= instantiate(this.IconBuff);
-        b.setScale(4,4);
+        b.setScale(initScale,initScale);
         b.setParent(this.node);
         b.getComponent(Sprite).changeSpriteFrameFromAtlas(spriteFrameStr);
-        tween(b).to(0.3,{scale:new Vec3(1,1,1)}).
+        if(tweenType){
+            // tween(b).delay(0.2).hide().delay(0.1).show().delay(0.1).hide().delay(0.1).show().
+            tween(b).delay(0.4).
+            call(() => { 
+                b.removeFromParent();
+            }).start();
+        }else{
+            tween(b).to(0.5,{scale:new Vec3(1,1,1)}).
             // delay(0.1).
             call(() => { 
                 b.removeFromParent();
             }).start();
-            
+        }
+        
     }
 
     updateBuffPos(){
@@ -321,6 +354,9 @@ export class CardControl extends Component {
         
     }
     onTouchEnd(e:EventTouch){
+        // this._time = this.duration;//测试shader
+        this.disappear();
+
         if(this.gameControl&&this.gameControl.gameState==2) {
             this.gameControl.selectChangeCard(this.uid);
             return;
@@ -348,17 +384,23 @@ export class CardControl extends Component {
         if(!this.gameControl||this.gameControl.gameState==2) return;
         // console.log(">>>cancel>>",e);
         if(this.posType==2) {//我的回合我的桌上的武将卡
-            let uinode = this.node.getParent().getComponent(UITransform);
-            let touchPos=new Vec3(e.getUILocation().x,e.getUILocation().y);
-            this.gameControl.hideArrow();
-            if(this.gameControl.myTurn&&this.baseData&&this.baseData.cardType==1){//武将卡判断攻击
-                this.gameControl.judgeAttack(this,uinode.convertToNodeSpaceAR(touchPos));
-            }    
+            if(this.node.getParent()){
+                let uinode = this.node.getParent().getComponent(UITransform);
+                let touchPos=new Vec3(e.getUILocation().x,e.getUILocation().y);
+                this.gameControl.hideArrow();
+                if(this.gameControl.myTurn&&this.baseData&&this.baseData.cardType==1){//武将卡判断攻击
+                    this.gameControl.judgeAttack(this,uinode.convertToNodeSpaceAR(touchPos));
+                } 
+            } 
         }  
         if(this.posType==1){
             this.node.setPosition(this.initPos);
             this.node.setSiblingIndex(this.initIndex);
         }
+    }
+    //卡牌破坏
+    disappear(){
+        this._time = this.duration;//测试shader
     }
 }
 

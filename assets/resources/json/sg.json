@@ -437,7 +437,7 @@
     "rare": 2,
     "attack": 15,
     "need": 0,
-    "effect": 101,
+    "effect": 104,
     "appearEffect": "[{\"id\":401,\"obj\":1,\"pos\":2,\"cardType\":1,\"value\":1,\"force\":4,\"buffId\":\"102_401\",\"buffValue\":\"3\"}]",
     "deathEffect": 0
   },
@@ -476,7 +476,7 @@
     "rare": 3,
     "attack": 16,
     "need": 0,
-    "effect": 0,
+    "effect": 104,
     "appearEffect": "[{\"id\":401,\"obj\":1,\"pos\":2,\"cardType\":1,\"value\":2,\"force\":4,\"buffId\":\"103_102_401\",\"buffValue\":\"4\"}]",
     "deathEffect": 0
   },
@@ -897,6 +897,32 @@
     "deathEffect": 0
   },
   {
+    "id": 21010,
+    "cardName": "旋风",
+    "cardType": 2,
+    "info": "随机破坏对方场上1张陷阱卡",
+    "force": 0,
+    "rare": 1,
+    "attack": -1,
+    "need": 0,
+    "effect": 0,
+    "appearEffect": "[{\"id\":301,\"obj\":2,\"pos\":2,\"cardType\":3,\"value\":1,\"noself\":1}]",
+    "deathEffect": 0
+  },
+  {
+    "id": 21011,
+    "cardName": "龙卷风",
+    "cardType": 2,
+    "info": "破坏场上所有陷阱卡",
+    "force": 0,
+    "rare": 4,
+    "attack": -1,
+    "need": 0,
+    "effect": 0,
+    "appearEffect": "[{\"id\":301,\"obj\":3,\"pos\":2,\"cardType\":3,\"value\":-1,\"noself\":1}]",
+    "deathEffect": 0
+  },
+  {
     "id": 10001,
     "cardName": "邓茂",
     "cardType": 1,
@@ -1067,15 +1093,54 @@
   },
   {
     "id": 30001,
-    "cardName": "测试抽卡",
+    "cardName": "武将反制",
     "cardType": 3,
-    "info": "对方抽卡时抽一张卡",
+    "info": "反制一张对方武将卡",
+    "force": 0,
+    "rare": 3,
+    "attack": -1,
+    "need": "{\"id\":1011,\"obj\":2}",
+    "effect": 0,
+    "appearEffect": "[]",
+    "deathEffect": 0
+  },
+  {
+    "id": 30002,
+    "cardName": "魔法反制",
+    "cardType": 3,
+    "info": "反制一张对方魔法卡",
+    "force": 0,
+    "rare": 3,
+    "attack": -1,
+    "need": "{\"id\":1012,\"obj\":2}",
+    "effect": 0,
+    "appearEffect": "[]",
+    "deathEffect": 0
+  },
+  {
+    "id": 30003,
+    "cardName": "陷阱反制",
+    "cardType": 3,
+    "info": "反制一张对方陷阱卡",
+    "force": 0,
+    "rare": 3,
+    "attack": -1,
+    "need": "{\"id\":1013,\"obj\":2}",
+    "effect": 0,
+    "appearEffect": "[]",
+    "deathEffect": 0
+  },
+  {
+    "id": 30004,
+    "cardName": "补给",
+    "cardType": 3,
+    "info": "对方抽卡时抽一张卡 士气+10",
     "force": 0,
     "rare": 1,
     "attack": -1,
     "need": "{\"id\":1003,\"obj\":2}",
     "effect": 0,
-    "appearEffect": "[{\"id\":201,\"obj\":1,\"value\":1}]",
+    "appearEffect": "[{\"id\":201,\"obj\":1,\"value\":1},{\"id\":202,\"obj\":1,\"value\":10}]",
     "deathEffect": 0
   },
   {

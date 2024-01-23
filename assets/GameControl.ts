@@ -237,9 +237,13 @@ export class GameControl extends Component {
         for(let i=0;i<cardPool.length;i++){
             let cardPoolOne:CardControl=cardPool[i].getComponent("CardControl");
             if(cardPoolOne.uid==useCard.uid) {
-                if(effect.noself==1)
-                continue;//破坏卡默认排除自身 判断301破坏 401添加buff 501
+                if(effect.noself==1){
+                    continue;//破坏卡默认排除自身 判断301破坏 401添加buff 501
+                }
             }    
+            if(effect.hasBuff){
+                console.log(effect.hasBuff,"判断hasbuff",cardPoolOne.getBuff(effect.hasBuff).length,cardPoolOne.buffList);
+            }
             if(!cardPoolOne.baseData) {//陷阱卡特殊判断
                 if(this.judgeCondition("cardType",effect.cardType,3)){
                     cardPoolNew.push(cardPoolOne);
@@ -571,12 +575,13 @@ export class GameControl extends Component {
             if(card.getComponent(CardControl).uid==uid){
                 index=card.getComponent(CardControl).index;
                 cardType=card.getComponent(CardControl).baseData?card.getComponent(CardControl).baseData.cardType:2;
-                if(card.getComponent(CardControl).state==1){//攻击动效中 延迟移除
-                    console.log(uid,"=======state设置成2",myself);
-                    card.getComponent(CardControl).state=2;
-                    return;
-                }
-                else card.removeFromParent();
+                // if(card.getComponent(CardControl).state==1){//攻击动效中 延迟移除
+                //     console.log(uid,"=======state设置成2",myself);
+                //     card.getComponent(CardControl).state=2;
+                //     return;
+                // }
+                // else card.removeFromParent();
+                card.removeFromParent();
             }
         }
         for(const card of node.children){
@@ -870,8 +875,7 @@ export class GameControl extends Component {
         if(card){
             let cControl=card.getComponent(CardControl);
             // console.log("========》call回调1",cControl.state);
-            if(cControl.state==2){//状态2 动效完成后破坏卡牌
-
+            if(cControl.state==2){//状态2 动效完成后破坏卡牌   弃用了暂时
                 // tween(card).to(0.2,{position:posTarget}).
                 // tween(card).hide().delay(1).show().
 
@@ -905,10 +909,11 @@ export class GameControl extends Component {
         let cardControl=this.getTableCardByUID(uid).getComponent(CardControl);
         cardControl.addBuff(buffUid,buffId,value);
     }
-    //移除Buff
-    removeBuff(uid:number,buffUid:number,myself:boolean){
+    //移除Buff value 1攻击显示圣盾效果
+    removeBuff(uid:number,buffUid:number,myself:boolean,value:number){
         let cardControl=this.getTableCardByUID(uid).getComponent(CardControl);
         cardControl.removeBuff(buffUid);
+        if(value) cardControl.buffEffect(String(GameConfig.BUFF_SHIELD),1);
     }
     //重置武将通常召唤次数  重置攻击次数
     initUseGeneralTimes(){
@@ -1143,21 +1148,33 @@ export class GameControl extends Component {
         call(() => { 
             card.setSiblingIndex(card.getComponent(CardControl).initIndex);
             this.attackCompleteCall(card,myself,pos);//攻击结束回调
-            if(target)this.attackCompleteCall(target,!myself,target.position);//攻击结束回调
+            // if(target)this.attackCompleteCall(target,!myself,target.position);//攻击结束回调
             
         }).start();
         
         
     }
-    //isMe  uid   value卡牌信息    updateType(3 2 1 0 -1 -2 -3 -4) 1召唤武将 2获得 3放置陷阱 -1破坏 -2返回手卡 -3返回卡组 -4陷阱卡发动
+    //isMe  uid   value卡牌信息    updateType(3 2 1 0 -1 -2 -3 -4 -5 ) 1召唤武将 2获得 3放置陷阱 0 -1破坏 -2返回手卡 -3返回卡组 -4陷阱卡发动 -5守护 
     reqCardUpdate(data:any){
         console.log(">>>>服务器卡牌更新事件 卡牌更新",data);
         if(data.updateType==1){
             this.addTableCard(data.value,1,data.isMe);
         }else if(data.updateType==-1){
             console.log(data.uid,"卡牌破坏",data.isMe);
-            this.removeTableCard(data.uid,data.isMe);
-            //处理消失效果 陷阱卡被破坏
+            let removeCard=this.getTableCardByUID(data.uid).getComponent(CardControl);
+            let dt:number=0.2;
+            if(!removeCard.baseData){//处理消失效果 陷阱卡被破坏 显示卡牌
+                console.log("显示陷阱卡？？",data.value.id)
+                removeCard.changeData(data.value.id,data.uid);
+                dt=0.4;
+            }
+            removeCard.disappear();//闪白shader
+            tween(removeCard).delay(dt).hide().delay(0.1).show().delay(0.1).hide().delay(0.1).show().start();
+            let callTime:number=setTimeout(()=>{
+                this.removeTableCard(data.uid,data.isMe);
+            },800)
+            // this.removeTableCard(data.uid,data.isMe);
+            
 
         }else if(data.updateType==-2){
             console.log(data.uid,"卡牌返回手卡",data.isMe);
@@ -1168,9 +1185,13 @@ export class GameControl extends Component {
         }else if(data.updateType==-4){
             console.log(data.uid,"陷阱卡发动效果",data.isMe);
             this.showTrapCard(data.value.uid,data.value.id);
+            
             this.removeTableCard(data.uid,data.isMe);
             //加入左侧富文本
             this.addRichText(data.value.id,data.isMe);
+        }else if(data.updateType==-5){
+            let protectCard=this.getTableCardByUID(data.uid).getComponent(CardControl);
+            protectCard.buffEffect(String(GameConfig.BUFF_PROTECT),1);
         }else if(data.updateType==3){
             console.log(data.uid,"卡牌使用",data.isMe);
             this.addTableCard(data.value,3,data.isMe);
@@ -1206,7 +1227,7 @@ export class GameControl extends Component {
             this.addBuff(data.uid,data.buffUid,data.buffId,data.isMe,data.value);
         }else if(data.updateType==-1){
             console.log(data.uid,"buff移除",data.isMe);
-            this.removeBuff(data.uid,data.buffUid,data.isMe);
+            this.removeBuff(data.uid,data.buffUid,data.isMe,data.value);
         }
         
     }
