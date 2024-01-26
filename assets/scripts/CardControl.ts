@@ -38,6 +38,7 @@ export class CardControl extends Component {
         
         this.node.getChildByName("ForceBg").on(NodeEventType.TOUCH_START,this.onForceTouchStart,this);
         
+        return;
         //shader
         this._median = this.duration / 2;
         // 获取材质，此处获取的是共享材质，即所有使用同一个材质的组件，会同步修改
@@ -59,13 +60,13 @@ export class CardControl extends Component {
         this.node.getChildByName("CardBg").off(NodeEventType.TOUCH_CANCEL,this.onTouchCancel,this);
     }
     update(deltaTime: number) {
-        if (this._time > 0) {
-            this._time -= deltaTime;
+        // if (this._time > 0) {
+        //     this._time -= deltaTime;
 
-            this._time = this._time < 0 ? 0 : this._time;
-            let rate = Math.abs(this._time - this._median) * 2 / this.duration;
-            this._material.setProperty("u_rate", rate);
-        }
+        //     this._time = this._time < 0 ? 0 : this._time;
+        //     let rate = Math.abs(this._time - this._median) * 2 / this.duration;
+        //     this._material.setProperty("u_rate", rate);
+        // }
     }
     //====方法事件
     //初始化数据
@@ -170,7 +171,7 @@ export class CardControl extends Component {
     }
     buffEffect(spriteFrameStr:string,tweenType:number=0){
 
-        let initScale=tweenType?3:4;
+        let initScale=tweenType?3:3;
         // let targetScale=tweenType?4:1;
         let b= instantiate(this.IconBuff);
         b.setScale(initScale,initScale);
@@ -261,6 +262,15 @@ export class CardControl extends Component {
     }
     //显示卡背
     showBack(bool:boolean){
+        this.node.getChildByName("CardBg").active=!bool||this.posType==2;
+        this.node.getChildByName("Buff").active=!bool;
+        this.node.getChildByName("LbName").active=!bool;
+        this.node.getChildByName("ForceBg").active=!bool;
+        this.node.getChildByName("Info").active=!bool;
+        this.node.getChildByName("CardEdge").active=!bool;
+        this.node.getChildByName("AttackBg").active=!bool;
+        
+
         this.node.getChildByName("CardBack").active=bool;
     }
     //显示基础信息
@@ -400,6 +410,7 @@ export class CardControl extends Component {
     }
     //卡牌破坏
     disappear(){
+        return;
         this._time = this.duration;//测试shader
     }
 }

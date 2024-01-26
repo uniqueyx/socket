@@ -18,12 +18,15 @@ export class AlertControl extends Component {
         
     }
 
-    show(str:string,call:Function=null,cancel:Function=null) {
+    show(str:string,showBtCancel:boolean=true,call:Function=null,cancel:Function=null) {
         this.confirmCall=call;
         this.cancelCall=cancel;
         // console.log("显示",str);
         this.node.getChildByName("LbInfo").getComponent(Label).string=str;
-
+        
+        this.node.getChildByName("BtConfirm").setPosition(showBtCancel?-100:0,this.node.getChildByName("BtConfirm").position.y);
+        this.node.getChildByName("BtCancel").setPosition(100,this.node.getChildByName("BtCancel").position.y);
+        this.node.getChildByName("BtCancel").active=showBtCancel;
     }
     //预制体绑定事件
     onBtConfirm(){

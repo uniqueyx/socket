@@ -1,4 +1,4 @@
-import { _decorator, Component, Node, Prefab, instantiate, Vec3, Label, director, tween, view, Vec2, UITransform, Size, Rect, Color, NodeEventType, EventTouch, UIOpacity, RichText } from 'cc';
+import { _decorator, Component, Node, Prefab, instantiate, Vec3, Label, director, tween, view, Vec2, UITransform, Size, Rect, Color, NodeEventType, EventTouch, UIOpacity, RichText, Button } from 'cc';
 import GameConfig from './scripts/Base/GameConfig';
 import GameEvent from './scripts/Base/GameEvent';
 import { SocketIO } from './scripts/Base/SocketIO';
@@ -38,6 +38,7 @@ export class GameControl extends Component {
         GameEvent.Instance.on("game_start",this.reqGameStart,this);
         GameEvent.Instance.on("card_info",this.reqCardInfo,this);
         GameEvent.Instance.on("game_over",this.reqGameOver,this);
+        GameEvent.Instance.on("game_dissolve",this.reqGameDissolve,this);
         GameEvent.Instance.on("draw",this.reqDraw,this);
         GameEvent.Instance.on("draw_other",this.reqDrawOther,this);
         GameEvent.Instance.on("turn_start",this.reqTurnStart,this);
@@ -154,7 +155,7 @@ export class GameControl extends Component {
         console.log("发送 投降");
         let al= instantiate(this.Alert);
         let aControl=al.getComponent(AlertControl);
-        aControl.show("确定投降结束本局对战吗？",()=>{
+        aControl.show("确定投降结束本局对战吗？",true,()=>{
             this.sendSurrender();
         });
         al.setParent(this.node);
@@ -780,10 +781,16 @@ export class GameControl extends Component {
     addTableCard(data:any,updateType:number,myself:boolean=true){
         let value=myself?1:-1;
         let c= instantiate(this.Card);
+        let cardControl=c.getComponent(CardControl);
         // c.setParent(this.cardTable);
-        c.getComponent(CardControl).initData(myself?2:12,data.id,data.uid,this.getTableCardList(updateType,myself).length);
-        c.getComponent(CardControl).initParent(this.cardTable);
-        if(data)    c.getComponent(CardControl).updateData(data);
+        cardControl.initData(myself?2:12,data.id,data.uid,this.getTableCardList(updateType,myself).length);
+        cardControl.initParent(this.cardTable);
+        if(data)    cardControl.updateData(data);
+        c.setScale(1.5,1.5);
+        tween(c).to(0.2,{scale:new Vec3(1,1,1)}).// delay(dTime).
+            call(() => { 
+                // c.removeFromParent();
+            }).start();
         this.updateTableCardPos(updateType,myself);
     }
     //获取满足条件的卡范围
@@ -856,7 +863,7 @@ export class GameControl extends Component {
     }
     //确定按钮 返回主页
     onBtConfirm(){
-        director.loadScene("gameScene");
+        director.loadScene("hall");
     }
     //HP改变
     updateHP(value:number,myself:boolean=true){
@@ -930,11 +937,21 @@ export class GameControl extends Component {
             cardOne.getComponent(CardControl).initAttackCount();
         }
     }
+    //显示隐藏富文本按钮
+    //显示隐藏面板
+    onBtShowRichText(e:EventTouch){
+        let actShow=this.node.getChildByName("ActShow");
+        let lb=actShow.getChildByName("BtShow").getChildByName("Label").getComponent(Label);
+        lb.string=lb.string=="显"?"隐":"显";
+        actShow.getChildByName("RichText").active=!actShow.getChildByName("RichText").active;
+        actShow.getChildByName("RichTextBg").active=!actShow.getChildByName("RichTextBg").active;
+    }
     //加入富文本
     addRichText(id:number,myself:boolean){
+        let btShow=this.node.getChildByName("ActShow").getChildByName("BtShow");
+        if(this.actString=="") btShow.active=true;
+
         let baseData:any=GameConfig.getCardDataById(id);
-        
-        
         let newStr=this.actString==""?"":"<br/>";
         newStr+=myself?"我":"<color=#ff>敌</color>";
         // newStr+=baseData.cardName;
@@ -943,14 +960,16 @@ export class GameControl extends Component {
         }else{
             newStr+="<u><i><b><color="+GameConfig.COLOR_RARE16[3]+" click='cardClick' param='"+0+"'>"+"陷阱卡"+"</color></b></i></u>";
         }
-       
+        
         this.actString+=newStr;
         let arr=this.actString.split("<br/>");
         if(arr.length==11){
             this.actString=this.actString.slice(this.actString.indexOf("<br/>")+5);
         }
         this.node.getChildByName("ActShow").getChildByName("RichText").getComponent(RichText).string=this.actString;
-        this.node.getChildByName("ActShow").getChildByName("RichTextBg").getComponent(UITransform).height=(arr.length>10?10:arr.length)*28.5;
+        let h=(arr.length>10?10:arr.length)*28.5;
+        this.node.getChildByName("ActShow").getChildByName("RichTextBg").getComponent(UITransform).height=h;
+        btShow.setPosition(btShow.position.x,h+50);
         // console.log(id,"富文本",arr);
     }
     showRichTextCard(value:string){
@@ -993,9 +1012,9 @@ export class GameControl extends Component {
             // c.setParent(this.node.getChildByName("CardShow"));
             c.getComponent(CardControl).initData(0,id,0,node.children.length);
             c.getComponent(CardControl).initParent(this.node.getChildByName("CardShow"));
-            let dTime=1.5;
+            let dTime=1.2;
             // if(data.id>20000&&data.id<30000) dTime=1.2;
-            tween(c).to(0.3,{scale:new Vec3(1.1,1.1,1)}).
+            tween(c).to(0.2,{scale:new Vec3(1.1,1.1,1)}).
             delay(dTime).
             call(() => { 
                 c.removeFromParent();
@@ -1010,6 +1029,7 @@ export class GameControl extends Component {
         this.node.getChildByName("RightTop").getChildByName("LbName").getComponent(Label).string=data.otherName;
         this.node.getChildByName("ChangeCardShow").getChildByName("LabelFirst").getComponent(Label).string=this.first?"你是先攻":"你是后攻";
         this.node.getChildByName("ChangeCardShow").active=true;
+        this.node.getChildByName("WaitUI").active=false;
     }
     reqCardInfo(data:any){
         console.log("服务器卡牌信息事件 卡牌信息",data);
@@ -1025,6 +1045,15 @@ export class GameControl extends Component {
         else if(data.winType==2) str+="无卡可抽";
         else if(data.winType==3) str+="投降";
         node.getChildByName("LbResult").getComponent(Label).string=str;
+    }
+    reqGameDissolve(data:any){
+        console.log("服务器游戏解散事件 游戏解散",data);
+        let al= instantiate(this.Alert);
+        let aControl=al.getComponent(AlertControl);
+        aControl.show("由于玩家长时间没准备 游戏解散！",false,()=>{
+            director.loadScene("gameScene");
+        });
+        al.setParent(this.node);
     }
     reqDraw(data:any){
         console.log("服务器抽卡事件 抽卡",data);
@@ -1186,7 +1215,10 @@ export class GameControl extends Component {
             console.log(data.uid,"陷阱卡发动效果",data.isMe);
             this.showTrapCard(data.value.uid,data.value.id);
             
-            this.removeTableCard(data.uid,data.isMe);
+            let callTime:number=setTimeout(()=>{
+                this.removeTableCard(data.uid,data.isMe);
+            },1200)
+            // this.removeTableCard(data.uid,data.isMe);
             //加入左侧富文本
             this.addRichText(data.value.id,data.isMe);
         }else if(data.updateType==-5){
@@ -1196,10 +1228,9 @@ export class GameControl extends Component {
             console.log(data.uid,"卡牌使用",data.isMe);
             this.addTableCard(data.value,3,data.isMe);
         }else if(data.updateType==4){
-            console.log(data.uid,"陷阱卡效果发动",data.isMe);
+            // console.log(data.uid,"陷阱卡效果发动",data.isMe);
             //处理发动显示效果
-
-            this.removeTableCard(data.uid,data.isMe);
+            // this.removeTableCard(data.uid,data.isMe);
         }
         else if(data.updateType==2){
             console.log(data.uid,"获得卡",data.isMe,data.value);

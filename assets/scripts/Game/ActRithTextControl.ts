@@ -1,4 +1,4 @@
-import { _decorator, Component, Node, EventTouch } from 'cc';
+import { _decorator, Component, Node, EventTouch, Button, Label } from 'cc';
 import { GameControl } from '../../GameControl';
 const { ccclass, property } = _decorator;
 
@@ -20,6 +20,8 @@ export class ActRithTextControl extends Component {
         // this.node.getComponent()
         this.node.getParent().getParent().getComponent(GameControl).showRichTextCard(param);
     }
+
+    
 }
 
 
