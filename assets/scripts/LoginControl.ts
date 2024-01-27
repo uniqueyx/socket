@@ -34,6 +34,7 @@ export class LoginControl extends Component {
 
     //按钮事件
     async onBtLogin(){
+        console.log("点击登录")
         if (!this.accountEditBox.string ) {
             Toast.toast("请输入用户名");
             return;
@@ -55,8 +56,8 @@ export class LoginControl extends Component {
             account,
             password,
           };
-      
-          const { result, data, message } = await fetch("http://localhost:3004/login", {
+          //http://localhost   http://192.168.101.8
+          const { result, data, message } = await fetch("http://192.168.101.8:3004/login", {
             method: "POST",
             body: JSON.stringify(params),
             headers: {
@@ -108,7 +109,7 @@ export class LoginControl extends Component {
             password,
             nick
           };
-          const res = await fetch("http://localhost:3004/register", {
+          const res = await fetch("http://192.168.101.8/register", {
             method: "POST",
             body: JSON.stringify(params),
             headers: {
