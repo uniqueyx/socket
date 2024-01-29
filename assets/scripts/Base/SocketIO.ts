@@ -5,23 +5,25 @@ import Singleton from "./Singleton";
 import io from 'socket.io-client/dist/socket.io.js'
 import GameEvent from "./GameEvent";
 import Toast from "./Toast";
+import GameConfig from "./GameConfig";
 // import io from 'socket.io/client-dist/socket.io.js'
 
 // @ccclass('SocketIO')
 export class SocketIO extends Singleton {
     socket=null;
     userID=null;
+    // tryTime:number;
     static get Instance() {
         return super.GetInstance<SocketIO>();
     }
     constructor() {
         super();
         console.log('init socket1')
-        this.socket=io('192.168.101.8:3005');//http://localhost:3005   192.168.101.8:3005    192.168.2.152:3005
+        this.socket=io('http://localhost:3005');//http://localhost:3005   192.168.101.8:3005    192.168.2.152:3005
         console.log('init socket')
-
+        // this.tryTime=0;
         this.socket.on('connect', (data: any) => {
-            if(this.userID==null)   this.userID=this.socket.id;
+            if(this.userID==null)   this.userID=GameConfig.USER_DATA.uid;
             console.log(this.userID,'连接成功 发送user',this.socket.id);
             this.socket.emit("CONNECT", {//"match"
                 // type: this.input1.text,
@@ -48,13 +50,19 @@ export class SocketIO extends Singleton {
         // 判断是否断开
         this.socket.on('disconnect', (data: any) => {
             console.log("disconnect断开socket")
-        
+            GameEvent.Instance.emit("disconnect",data);
         });
 
          // 连接错误
          this.socket.on("connect_error", (err: any) => {
             console.log("连接错误-connect_error:", err);
-            Toast.toast("连接服务器失败！尝试自动重连中...");
+            // Toast.toast("连接服务器失败！尝试自动重连中...");
+            // this.tryTime++;
+            // if(this.tryTime>5){
+            //     this.tryTime=0;
+            //     console.log("断开连接")
+            //     this.socket.disconnect();
+            // }
         });
         // 连接超时
         this.socket.on("connect_timeout", (data: any) => {

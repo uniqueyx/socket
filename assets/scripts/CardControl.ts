@@ -30,7 +30,7 @@ export class CardControl extends Component {
     _time: number = 0;
     _material: Material = null!;
     onLoad(){
-        console.log("<<<<<<<<<<init card");
+        // console.log("<<<<<<<<<<init card");
         this.node.getChildByName("CardBg").on(NodeEventType.TOUCH_START,this.onTouchStart,this);
         this.node.getChildByName("CardBg").on(NodeEventType.TOUCH_MOVE,this.onTouchMove,this);
         this.node.getChildByName("CardBg").on(NodeEventType.TOUCH_END,this.onTouchEnd,this);
@@ -71,7 +71,7 @@ export class CardControl extends Component {
     //====方法事件
     //初始化数据
     initData(posType:number,id:number=0,uid:number=0,index:number=0){
-        console.log(this.node.getSiblingIndex(),index,"卡牌id>>>",id);
+        // console.log(this.node.getSiblingIndex(),index,"卡牌id>>>",id);
         this.posType=posType;
         this.node.getChildByName("Buff").setPosition(0,posType==2?-105:105);
         this.index=index;
@@ -127,6 +127,7 @@ export class CardControl extends Component {
             }
         }
         this.initAttackCount();//攻击次数暂时默认1
+        this.attackedCount=data.attackedCount;
         console.log("updateData>>",this.buffList.length)
         // posX=( index* (cardHalf+apart)*2) - (cardNum-1)*(cardHalf+apart);
     }
@@ -404,8 +405,10 @@ export class CardControl extends Component {
             } 
         }  
         if(this.posType==1){
-            this.node.setPosition(this.initPos);
-            this.node.setSiblingIndex(this.initIndex);
+            if(this.node){
+                this.node.setPosition(this.initPos);
+                this.node.setSiblingIndex(this.initIndex);
+            }
         }
     }
     //卡牌破坏

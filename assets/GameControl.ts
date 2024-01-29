@@ -31,11 +31,14 @@ export class GameControl extends Component {
     gameState:number;//游戏状态阶段 1准备 2换牌 3回合开始
     turnCount:number;//回合数
     useGeneralTimes:number;//武将通常召唤次数
+    changeHand:boolean;//是否更换完手牌
     onLoad(){
         // GameEvent.Instance.on("match_success")
         this.socketIO=SocketIO.Instance;
         this.cardTable=this.node.getChildByName("CardTable");
+        GameEvent.Instance.on("disconnect",this.reqDisconnect,this);
         GameEvent.Instance.on("game_start",this.reqGameStart,this);
+        GameEvent.Instance.on("game_data",this.reqGameData,this);
         GameEvent.Instance.on("card_info",this.reqCardInfo,this);
         GameEvent.Instance.on("game_over",this.reqGameOver,this);
         GameEvent.Instance.on("game_dissolve",this.reqGameDissolve,this);
@@ -59,12 +62,13 @@ export class GameControl extends Component {
         // if(this.Card)   {
         //     let ca= instantiate(this.Card);
         // }    
+        
+        this.initUI();
         //发送准备开始消息
         this.socketIO.socket.emit("GAME", {
             type: "game_ready",
             user: this.socketIO.userID
         });
-        this.initUI();
         console.log( '<<onload     socket  userid',this.socketIO.userID );
         return;
         if(this.Card){
@@ -79,9 +83,12 @@ export class GameControl extends Component {
     }
     onDestroy(){
         console.log("gamecontrol 游戏场景destroy");
+        GameEvent.Instance.off("disconnect",this.reqDisconnect,this);
         GameEvent.Instance.off("game_start",this.reqGameStart,this);
+        GameEvent.Instance.off("game_data",this.reqGameData,this);
         GameEvent.Instance.off("card_info",this.reqCardInfo,this);
         GameEvent.Instance.off("game_over",this.reqGameOver,this);
+        GameEvent.Instance.off("game_dissolve",this.reqGameDissolve,this);
         GameEvent.Instance.off("draw",this.reqDraw,this);
         GameEvent.Instance.off("draw_other",this.reqDrawOther,this);
         GameEvent.Instance.off("turn_start",this.reqTurnStart,this);
@@ -125,9 +132,12 @@ export class GameControl extends Component {
         this.turnCount=0;
         this.hp=GameConfig.INIT_HP;
         this.hpOther=GameConfig.INIT_HP;
+        this.node.getChildByName("UICenter").getChildByName("BtTurnEnd").active=false;
+        this.node.getChildByName("UICenter").getChildByName("LbOtherTurn").active=false;
+        
         this.node.getChildByName("ActShow").getChildByName("RichText").getComponent(RichText).string="";
         this.node.getChildByName("ActShow").getChildByName("RichTextBg").getComponent(UITransform).height=0;
-        this.node.getChildByName("LeftBottom").getChildByName("LbName").getComponent(Label).string=this.socketIO.userID;
+        this.node.getChildByName("LeftBottom").getChildByName("LbName").getComponent(Label).string=GameConfig.USER_DATA.nick;//this.socketIO.userID;
         this.node.getChildByName("LeftBottom").getChildByName("LbHP").getComponent(Label).string=String(GameConfig.INIT_HP);
         this.node.getChildByName("RightTop").getChildByName("LbHP").getComponent(Label).string=String(GameConfig.INIT_HP);
         
@@ -419,10 +429,19 @@ export class GameControl extends Component {
     }
     //消息方法
     initCard(data:any){
+        this.cardTable.removeAllChildren();
+        this.node.getChildByName("Bottom").removeAllChildren();
+        this.node.getChildByName("Top").removeAllChildren();
+        this.node.getChildByName("RightBottom").removeAllChildren();
+        this.node.getChildByName("LeftTop").removeAllChildren();
         this.initHandCard(data.handCards);
         this.initRemainCard(data.remainCards);
         this.initHandCard(data.otherHandCards,false);
         this.initRemainCard(data.otherRemainCards,false);
+        this.initTableCard(data.tableCards,1);
+        this.initTableCard(data.otherTableCards,1,false);
+        this.initTableCard(data.magicCards,3);
+        this.initTableCard(data.otherMagicCards,3,false);
         if(this.gameState==2){
             this.updateChangeCardPos();
         }
@@ -470,6 +489,7 @@ export class GameControl extends Component {
         }
     }
     selectChangeCard(uid:number){
+        if(this.changeHand) return;
         let redCross=this.node.getChildByName("ChangeCardShow").getChildByName(String(uid));
         // console.log(redCross.active,"选中卡",uid);
         if(redCross)    redCross.active=!redCross.active;
@@ -485,6 +505,21 @@ export class GameControl extends Component {
             c.getComponent(CardControl).initParent(parent);
         }
         this.updateHandCardPos(myself);
+    }
+    initTableCard(data:any,updateType:number,myself:boolean=true){
+        console.log("初始化场上的牌",data.length);
+        let parent=this.cardTable;//this.node.getChildByName(myself?"Bottom":"Top");
+        for(let i=0;i<data.length;i++){
+            let c= instantiate(this.Card);
+            // c.setParent(parent);
+            let cardControl=c.getComponent(CardControl);
+            cardControl.initData(myself?2:12,data[i].id,data[i].uid,i);//this.getTableCardList(updateType,myself).length
+            cardControl.initParent(parent);
+            if(data[i])    cardControl.updateData(data[i]);
+
+        }
+        // this.updateHandCardPos(myself);
+        this.updateTableCardPos(updateType,myself);
     }
     initRemainCard(data:any,myself:boolean=true){
         console.log("初始化牌堆",data);
@@ -587,7 +622,7 @@ export class GameControl extends Component {
         }
         for(const card of node.children){
             let cardC=card.getComponent(CardControl);
-            if(cardC.posType==(myself?2:12)&&cardC.index>index){
+            if(cardC&&cardC.posType==(myself?2:12)&&cardC.index>index){
                 if( (cardType==1&&cardC.baseData.cardType==cardType) || (cardType>1&&(!cardC.baseData|| (cardC.baseData&&cardC.baseData.cardType>1) ) ) ){
                     cardC.index--;
                 }
@@ -877,6 +912,16 @@ export class GameControl extends Component {
         Toast.tip(String(value>=0?("+"+value):value),node.position);
         node.getChildByName("LbHP").getComponent(Label).string=String(myself?this.hp:this.hpOther);
     }
+    showHP(value:number,myself:boolean=true){
+        if(myself){
+            this.hp=value;
+        }else{
+            this.hpOther=value;
+        }
+        let node=this.node.getChildByName(myself?"LeftBottom":"RightTop");
+        // Toast.tip(String(value>=0?("+"+value):value),node.position);
+        node.getChildByName("LbHP").getComponent(Label).string=String(myself?this.hp:this.hpOther);
+    }
     //攻击结束回调
     attackCompleteCall(card:Node,myself:boolean,pos:Vec3){
         if(card){
@@ -936,6 +981,15 @@ export class GameControl extends Component {
             let cardOne=cardList[i];
             cardOne.getComponent(CardControl).initAttackCount();
         }
+    }
+    //显示回合倒计时时间
+    showTurnCountDown(time:number=-1){
+        this.unschedule(this.countDown);
+        this.countDownTime=time>0?time:GameConfig.TURN_TIME;
+        let lbC=this.node.getChildByName("UICenter").getChildByName("LbCountdown").getComponent(Label);
+        lbC.string=String(this.countDownTime);
+        lbC.color=this.myTurn?new Color(104,150,128):new Color(209,144,128); 
+        this.schedule(this.countDown,1,this.countDownTime);
     }
     //显示隐藏富文本按钮
     //显示隐藏面板
@@ -1022,6 +1076,15 @@ export class GameControl extends Component {
             start();
     }
     //===================服务器消息事件处理
+    reqDisconnect(data:any){
+        console.log("服务器断开连接",data);
+        let al= instantiate(this.Alert);
+        let aControl=al.getComponent(AlertControl);
+        aControl.show("网络异常 断开连接",false,()=>{
+            director.loadScene("login");
+        });
+        al.setParent(this.node);
+    }
     reqGameStart(data:any){
         console.log("服务器匹配成功事件 游戏开始",data);
         this.first=data.first;
@@ -1030,6 +1093,35 @@ export class GameControl extends Component {
         this.node.getChildByName("ChangeCardShow").getChildByName("LabelFirst").getComponent(Label).string=this.first?"你是先攻":"你是后攻";
         this.node.getChildByName("ChangeCardShow").active=true;
         this.node.getChildByName("WaitUI").active=false;
+    }
+    reqGameData(data:any){
+        console.log("游戏重连数据",data);
+        this.first=data.first;
+        this.gameState=data.gameState;
+        this.myTurn=data.myTurn;
+        this.turnCount=data.turn;
+        this.showHP(data.hp);
+        this.showHP(data.otherHP,false);
+        this.useGeneralTimes=data.useGeneralTimes;
+        this.changeHand=data.changeHand;
+        //回合相关
+        this.node.getChildByName("UICenter").getChildByName("BtTurnEnd").active=data.myTurn;
+        this.node.getChildByName("UICenter").getChildByName("LbOtherTurn").active=!data.myTurn;
+        if(this.gameState>2)    this.showTurnCountDown(data.turnTime);//判断是否换手牌阶段
+
+        this.node.getChildByName("RightTop").getChildByName("LbName").getComponent(Label).string=data.otherName;
+        //换手牌重连逻辑 需要添加
+        if(this.gameState==2){
+            this.node.getChildByName("ChangeCardShow").getChildByName("LabelFirst").getComponent(Label).string=this.first?"你是先攻":"你是后攻";
+            this.node.getChildByName("ChangeCardShow").active=true;
+            if(data.changeHand){
+                this.node.getChildByName("ChangeCardShow").getChildByName("BtConfirm").active=false;
+                this.node.getChildByName("ChangeCardShow").getChildByName("LbResult").active=true;
+            }
+        }
+        // this.node.getChildByName("ChangeCardShow").getChildByName("LabelFirst").getComponent(Label).string=this.first?"你是先攻":"你是后攻";
+        // this.node.getChildByName("ChangeCardShow").active=true;
+        this.node.getChildByName("WaitUI").active=this.gameState<2;
     }
     reqCardInfo(data:any){
         console.log("服务器卡牌信息事件 卡牌信息",data);
@@ -1101,12 +1193,8 @@ export class GameControl extends Component {
         // this.node.getChildByName("UICenter").getChildByName("BtSurrender").active=data.myTurn;
         this.node.getChildByName("UICenter").getChildByName("BtTurnEnd").active=data.myTurn;
         this.node.getChildByName("UICenter").getChildByName("LbOtherTurn").active=!data.myTurn;
-        this.unschedule(this.countDown);
-        this.countDownTime=GameConfig.TURN_TIME;
-        let lbC=this.node.getChildByName("UICenter").getChildByName("LbCountdown").getComponent(Label);
-        lbC.string=String(this.countDownTime);
-        lbC.color=this.myTurn?new Color(104,150,128):new Color(209,144,128); 
-        this.schedule(this.countDown,1,this.countDownTime);
+        
+        this.showTurnCountDown();
     }
     
     reqCardUsed(data:any){
@@ -1269,6 +1357,7 @@ export class GameControl extends Component {
     }
     reqCardChangeHand(data:any){
         console.log("服务器更换手牌事件 ",data);
+        this.changeHand=true;
         this.node.getChildByName("ChangeCardShow").getChildByName("BtConfirm").active=false;
         this.node.getChildByName("ChangeCardShow").getChildByName("LbResult").active=true;
         let changeNode=this.node.getChildByName("ChangeCardShow").getChildByName("NodeCard");

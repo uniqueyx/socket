@@ -8,7 +8,9 @@ export default class GameConfig{
   static TABLEMAGIC_LIMIT:number = 5;//魔法卡上限
   static INIT_HP:number = 100;//初始士气
 
+  //全局数据
   static CARD_DATA:Record<string,any>;//卡牌图鉴基础数据
+  static USER_DATA:any;//玩家信息
 
   //buff
   static BUFF_TAUNT=101;//嘲讽

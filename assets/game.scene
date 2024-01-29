@@ -537,8 +537,8 @@
     "_string": "投降",
     "_horizontalAlign": 1,
     "_verticalAlign": 1,
-    "_actualFontSize": 22,
-    "_fontSize": 22,
+    "_actualFontSize": 25,
+    "_fontSize": 25,
     "_fontFamily": "Arial",
     "_lineHeight": 40,
     "_overflow": 1,
@@ -547,7 +547,7 @@
     "_isSystemFontUsed": true,
     "_spacingX": 0,
     "_isItalic": false,
-    "_isBold": false,
+    "_isBold": true,
     "_isUnderline": false,
     "_underlineHeight": 2,
     "_cacheMode": 0,
@@ -705,7 +705,7 @@
         "__id__": 17
       }
     ],
-    "_active": false,
+    "_active": true,
     "_components": [
       {
         "__id__": 20
@@ -850,7 +850,7 @@
     "_isSystemFontUsed": true,
     "_spacingX": 0,
     "_isItalic": false,
-    "_isBold": false,
+    "_isBold": true,
     "_isUnderline": false,
     "_underlineHeight": 2,
     "_cacheMode": 0,
@@ -1004,7 +1004,7 @@
       "__id__": 7
     },
     "_children": [],
-    "_active": false,
+    "_active": true,
     "_components": [
       {
         "__id__": 25
@@ -1488,7 +1488,7 @@
     "_lpos": {
       "__type__": "cc.Vec3",
       "x": -38.834,
-      "y": 19.382,
+      "y": 25,
       "z": 0
     },
     "_lrot": {
@@ -1526,7 +1526,7 @@
     "__prefab": null,
     "_contentSize": {
       "__type__": "cc.Size",
-      "width": 130.13671875,
+      "width": 173.515625,
       "height": 50.4
     },
     "_anchorPoint": {
@@ -1559,8 +1559,8 @@
     "_string": "label1111",
     "_horizontalAlign": 1,
     "_verticalAlign": 1,
-    "_actualFontSize": 30,
-    "_fontSize": 30,
+    "_actualFontSize": 40,
+    "_fontSize": 40,
     "_fontFamily": "Arial",
     "_lineHeight": 40,
     "_overflow": 0,
@@ -1815,7 +1815,7 @@
     "_lpos": {
       "__type__": "cc.Vec3",
       "x": 41.499,
-      "y": -18.84,
+      "y": -25,
       "z": 0
     },
     "_lrot": {
@@ -1853,7 +1853,7 @@
     "__prefab": null,
     "_contentSize": {
       "__type__": "cc.Size",
-      "width": 135.1025390625,
+      "width": 180.13671875,
       "height": 50.4
     },
     "_anchorPoint": {
@@ -1886,8 +1886,8 @@
     "_string": "label2222",
     "_horizontalAlign": 1,
     "_verticalAlign": 1,
-    "_actualFontSize": 30,
-    "_fontSize": 30,
+    "_actualFontSize": 40,
+    "_fontSize": 40,
     "_fontFamily": "Arial",
     "_lineHeight": 40,
     "_overflow": 0,

@@ -1,4 +1,4 @@
-import { _decorator, Component, Node, resources, JsonAsset, director } from 'cc';
+import { _decorator, Component, Node, resources, JsonAsset, director, sys } from 'cc';
 import GameConfig from './Base/GameConfig';
 import GameEvent from './Base/GameEvent';
 import { SocketIO } from './Base/SocketIO';
@@ -16,12 +16,14 @@ export class HallControl extends Component {
         GameEvent.Instance.on("match_success",this.reqMatchSuccess,this);
         GameEvent.Instance.on("match_wait",this.reqMatchWait,this);
         GameEvent.Instance.on("match_cancel",this.reqMatchCancel,this);
+        GameEvent.Instance.on("game_return",this.reqGameReturn,this);
         this.socketIO=SocketIO.Instance;
     }
     onDestroy(){
         GameEvent.Instance.off("match_success",this.reqMatchSuccess,this);
         GameEvent.Instance.off("match_wait",this.reqMatchWait,this);
         GameEvent.Instance.off("match_cancel",this.reqMatchCancel,this);
+        GameEvent.Instance.off("game_return",this.reqGameReturn,this);
     }
     start() {
 
@@ -32,6 +34,14 @@ export class HallControl extends Component {
     }
     //方法
     loadData(){
+        if(!GameConfig.USER_DATA){
+            let dataStorage=JSON.parse(sys.localStorage.getItem("sgCardUser"));
+            console.log("dataStorage>>",dataStorage);
+            if(dataStorage){
+              GameConfig.USER_DATA=dataStorage;
+            }
+        }
+        
         if(GameConfig.CARD_DATA) return;
         console.log("loadData>> 卡牌数据sg.json");
         resources.load('./json/sg', (err: any, res: JsonAsset) => {
@@ -88,6 +98,10 @@ export class HallControl extends Component {
     reqMatchCancel(data:unknown){
         console.log("服务器事件 matchCancel",data);
         this.node.getChildByName("MatchMask").active=false;
+    }
+    reqGameReturn(data:unknown){
+        console.log("服务器事件 重连返回游戏",data);
+        director.loadScene("game");
     }
 }
 

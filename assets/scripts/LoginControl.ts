@@ -1,5 +1,6 @@
 import { _decorator, Component, Node, EditBox, director, sys } from 'cc';
 import Toast from './Base/Toast';
+import GameConfig from './Base/GameConfig';
 const { ccclass, property } = _decorator;
 
 @ccclass('LoginControl')
@@ -19,6 +20,7 @@ export class LoginControl extends Component {
         let dataStorage=JSON.parse(sys.localStorage.getItem("sgCardUser"));
         // console.log("sgCardUser",dataStorage);
         if(dataStorage){
+          GameConfig.USER_DATA=dataStorage;
             this.accountEditBox.string=dataStorage.account;
             this.passwordEditBox.string=dataStorage.password;
         }
@@ -57,7 +59,7 @@ export class LoginControl extends Component {
             password,
           };
           //http://localhost   http://192.168.101.8
-          const { result, data, message } = await fetch("http://192.168.101.8:3004/login", {
+          const { result, data, message } = await fetch("http://localhost:3004/login", {
             method: "POST",
             body: JSON.stringify(params),
             headers: {
@@ -75,8 +77,9 @@ export class LoginControl extends Component {
             console.log("登陆成功",data);
             // await this.connect(data.token);
             director.loadScene("hall");
-
-            sys.localStorage.setItem("sgCardUser",JSON.stringify({account:account,password:password}))
+            let obj={account:account,password:password,uid:data.uid,nick:data.nick};
+            GameConfig.USER_DATA=obj;
+            sys.localStorage.setItem("sgCardUser",JSON.stringify(obj))
           } 
     }
     onBtOpenRegister(){
@@ -109,7 +112,7 @@ export class LoginControl extends Component {
             password,
             nick
           };
-          const res = await fetch("http://192.168.101.8/register", {
+          const res = await fetch("http://localhost/register", {
             method: "POST",
             body: JSON.stringify(params),
             headers: {
