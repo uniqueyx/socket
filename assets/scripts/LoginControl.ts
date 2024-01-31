@@ -58,8 +58,8 @@ export class LoginControl extends Component {
             account,
             password,
           };
-          //http://localhost   http://192.168.101.8
-          const { result, data, message } = await fetch("http://localhost:3004/login", {
+          //http://localhost   http://192.168.101.8   http://192.168.71.1
+          const { result, data, message } = await fetch(GameConfig.IP+":3004/login", {
             method: "POST",
             body: JSON.stringify(params),
             headers: {
@@ -112,7 +112,7 @@ export class LoginControl extends Component {
             password,
             nick
           };
-          const res = await fetch("http://localhost/register", {
+          const res = await fetch(GameConfig.IP+":3004/register", {
             method: "POST",
             body: JSON.stringify(params),
             headers: {

@@ -19,7 +19,7 @@ export class SocketIO extends Singleton {
     constructor() {
         super();
         console.log('init socket1')
-        this.socket=io('http://localhost:3005');//http://localhost:3005   192.168.101.8:3005    192.168.2.152:3005
+        this.socket=io(GameConfig.IP+':3005');//http://localhost:3005   192.168.101.8:3005    192.168.2.152:3005
         console.log('init socket')
         // this.tryTime=0;
         this.socket.on('connect', (data: any) => {
@@ -40,6 +40,9 @@ export class SocketIO extends Singleton {
         
         });
 
+        this.socket.on("ARENA",(data: any) => {
+            this.onSocketHandle(data);
+          });
         this.socket.on("ROOM",(data: any) => {
             this.onSocketHandle(data);
           });

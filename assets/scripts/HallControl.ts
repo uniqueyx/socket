@@ -3,6 +3,7 @@ import GameConfig from './Base/GameConfig';
 import GameEvent from './Base/GameEvent';
 import { SocketIO } from './Base/SocketIO';
 import Toast from './Base/Toast';
+import { ArenaControl } from './Game/ArenaControl';
 const { ccclass, property } = _decorator;
 
 @ccclass('HallControl')
@@ -18,6 +19,8 @@ export class HallControl extends Component {
         GameEvent.Instance.on("match_cancel",this.reqMatchCancel,this);
         GameEvent.Instance.on("game_return",this.reqGameReturn,this);
         this.socketIO=SocketIO.Instance;
+
+        
     }
     onDestroy(){
         GameEvent.Instance.off("match_success",this.reqMatchSuccess,this);
@@ -26,7 +29,7 @@ export class HallControl extends Component {
         GameEvent.Instance.off("game_return",this.reqGameReturn,this);
     }
     start() {
-
+        this.node.getChildByName("UIArena").active=false;
     }
 
     update(deltaTime: number) {
@@ -79,7 +82,9 @@ export class HallControl extends Component {
     }
 
     onBtArena(){
-        Toast.toast("功能开发中");
+        this.node.getChildByName("UIArena").getComponent(ArenaControl).getInfo();
+        this.node.getChildByName("UIArena").active=true;
+        // Toast.toast("功能开发中");
     }
     onBtEditCard(){
         Toast.toast("功能开发中");

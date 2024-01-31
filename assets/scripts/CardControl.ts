@@ -372,6 +372,7 @@ export class CardControl extends Component {
             this.gameControl.selectChangeCard(this.uid);
             return;
         }
+        if(!this.gameControl) return;
         // console.log(this.node.position.y,this.initPos.y,">>>end>>",e);
         // console.log(this.node.getParent().getParent().getComponent(GameControl),"<<game");
         if(this.posType==2) {//我的回合我的桌上的武将卡
