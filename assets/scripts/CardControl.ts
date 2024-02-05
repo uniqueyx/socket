@@ -86,7 +86,7 @@ export class CardControl extends Component {
         
         this.baseData=GameConfig.getCardDataById(id);
         // this.baseData.need=JSON.parse(this.baseData.need);//json解析特招条件
-        console.log("initData>>>basedata",this.baseData);
+        console.log("initData>>>basedata",this.baseData.id,this.baseData.cardName);
         this.showBase();
         //场上陷阱卡特殊处理 盖放
         if(posType==2&&this.baseData&&this.baseData.cardType==3){
@@ -324,6 +324,7 @@ export class CardControl extends Component {
     }    
     //卡牌触摸
     onTouchStart(e:EventTouch){
+        if(!this.gameControl)   GameEvent.Instance.emit("cardEditTouchStart",{pos:this.node.position,id:this.baseData?this.baseData.id:0});
         if(!this.gameControl||this.gameControl.gameState==2) return;
         this.initPos=new Vec3(this.node.position);//.x,this.node.position.y
         this.initIndex=this.node.getSiblingIndex();
@@ -341,6 +342,7 @@ export class CardControl extends Component {
         // console.log(this.node.getWorldPosition().x,this.node.getWorldPosition().y,"touchstart",e.getLocation(),e.getUILocation());
     }
     onTouchMove(e:EventTouch){
+        if(!this.gameControl)   GameEvent.Instance.emit("cardEditTouchMove",{posX:e.getUIDelta().x,posY:e.getUIDelta().y});
         if(!this.gameControl||this.gameControl.gameState==2) return;
         // if(this.posType==2) console.log("e>>touchmove",e);
         // let location = e.getDelta()
@@ -366,6 +368,7 @@ export class CardControl extends Component {
     }
     onTouchEnd(e:EventTouch){
         // this._time = this.duration;//测试shader
+        if(!this.gameControl)   GameEvent.Instance.emit("cardEditTouchEnd",{});
         this.disappear();
 
         if(this.gameControl&&this.gameControl.gameState==2) {
@@ -393,6 +396,13 @@ export class CardControl extends Component {
          }
     }
     onTouchCancel(e:EventTouch){
+        if(!this.gameControl){
+            //let uinode = this.node.getParent().getComponent(UITransform);
+            //let touchPos=new Vec3(e.getUILocation().x,e.getUILocation().y);
+            //console.log("onTouchCancel>>",uinode.convertToNodeSpaceAR(touchPos));
+            //GameEvent.Instance.emit("cardEditTouchCancel",{pos:uinode.convertToNodeSpaceAR(touchPos)});
+            GameEvent.Instance.emit("cardEditTouchCancel",{id:this.baseData?this.baseData.id:0});
+        }
         if(!this.gameControl||this.gameControl.gameState==2) return;
         // console.log(">>>cancel>>",e);
         if(this.posType==2) {//我的回合我的桌上的武将卡

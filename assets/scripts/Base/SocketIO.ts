@@ -25,13 +25,12 @@ export class SocketIO extends Singleton {
         this.socket.on('connect', (data: any) => {
             if(this.userID==null)   this.userID=GameConfig.USER_DATA.uid;
             console.log(this.userID,'连接成功 发送user',this.socket.id);
+            // console.log("this.socket>>>",this.socket);//测试用
             this.socket.emit("CONNECT", {//"match"
                 // type: this.input1.text,
                 user: this.userID
             });
-            
-            
-        
+            GameEvent.Instance.emit("connected",data);
         });
 
         this.socket.on('message', (data: any) => {
@@ -40,16 +39,23 @@ export class SocketIO extends Singleton {
         
         });
 
+        this.socket.on("CARD",(data: any) => {
+            this.onSocketHandle(data);
+        });
         this.socket.on("ARENA",(data: any) => {
             this.onSocketHandle(data);
-          });
+        });  
+        this.socket.on("LOGIN",(data: any) => {
+            this.onSocketHandle(data);
+        });  
         this.socket.on("ROOM",(data: any) => {
             this.onSocketHandle(data);
-          });
+        });
         this.socket.on("GAME",(data: any) => {
             this.onSocketHandle(data);
-          });
-
+        });
+        
+        
         // 判断是否断开
         this.socket.on('disconnect', (data: any) => {
             console.log("disconnect断开socket")
@@ -59,6 +65,7 @@ export class SocketIO extends Singleton {
          // 连接错误
          this.socket.on("connect_error", (err: any) => {
             console.log("连接错误-connect_error:", err);
+            GameEvent.Instance.emit("connect_error",err);
             // Toast.toast("连接服务器失败！尝试自动重连中...");
             // this.tryTime++;
             // if(this.tryTime>5){
@@ -77,6 +84,10 @@ export class SocketIO extends Singleton {
         return new Promise((resolve, reject) => {
             resolve(true);
         })
+    }
+    //主动清除断开连接
+    clear(){
+        
     }
 
     test(){

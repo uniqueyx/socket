@@ -5,6 +5,7 @@ import { SocketIO } from './scripts/Base/SocketIO';
 import Toast from './scripts/Base/Toast';
 import { CardControl } from './scripts/CardControl';
 import { AlertControl } from './scripts/Common/AlertControl';
+import { AudioManager } from './scripts/Base/AudioManager';
 const { ccclass, property } = _decorator;
 
 @ccclass('GameControl')
@@ -121,7 +122,7 @@ export class GameControl extends Component {
     }
 
 
-    update(deltaTime: number) {
+    update(deltaTime: number) {                                                                                                                                                         
         
     }
 
@@ -134,7 +135,7 @@ export class GameControl extends Component {
         this.hpOther=GameConfig.INIT_HP;
         this.node.getChildByName("UICenter").getChildByName("BtTurnEnd").active=false;
         this.node.getChildByName("UICenter").getChildByName("LbOtherTurn").active=false;
-        
+
         this.node.getChildByName("ActShow").getChildByName("RichText").getComponent(RichText).string="";
         this.node.getChildByName("ActShow").getChildByName("RichTextBg").getComponent(UITransform).height=0;
         this.node.getChildByName("LeftBottom").getChildByName("LbName").getComponent(Label).string=GameConfig.USER_DATA.nick;//this.socketIO.userID;
@@ -155,6 +156,7 @@ export class GameControl extends Component {
         // let ran=Math.random();
         // this.updateHP(ran<0.5?-10:10);
         // return;
+        AudioManager.inst.playOneShot("audio/bt_back");
         this.socketIO.socket.emit("GAME", {
             type: "turn_end",
             user: this.socketIO.userID
@@ -162,6 +164,7 @@ export class GameControl extends Component {
     }
     //投降
     onBtSurrender(){
+        AudioManager.inst.playOneShot("audio/bt_back");
         console.log("发送 投降");
         let al= instantiate(this.Alert);
         let aControl=al.getComponent(AlertControl);
@@ -607,6 +610,7 @@ export class GameControl extends Component {
         let node=this.cardTable;
         let index=0;
         let cardType=1;
+        //cardType undefined 经常有BUG
         for(const card of node.children){
             if(card.getComponent(CardControl).uid==uid){
                 index=card.getComponent(CardControl).index;
@@ -902,6 +906,9 @@ export class GameControl extends Component {
     }
     //HP改变
     updateHP(value:number,myself:boolean=true){
+        if(value>0){
+            AudioManager.inst.playOneShot("audio/hp");
+        }
         //后续加减特效
         if(myself){
             this.hp+=value;
@@ -1157,6 +1164,9 @@ export class GameControl extends Component {
     }
     reqTurnStart(data:any){
         console.log("服务器回合开始事件 回合开始",data);
+        if(data.myTurn){
+            AudioManager.inst.playOneShot("audio/myturn");
+        }
         let dt=0.4;
         if(this.gameState==2){//换牌状态特殊处理
             dt=1;
@@ -1235,9 +1245,11 @@ export class GameControl extends Component {
         let pos=new Vec3(card.position.x,card.position.y);
         let posTarget:Vec3;
         if(target){
+            AudioManager.inst.playOneShot("audio/attack");
             target.getComponent(CardControl).state=1;
             posTarget=new Vec3(target.position.x,target.position.y+(myself?-180:180));
         }else{
+            AudioManager.inst.playOneShot("audio/attack_direct");
             posTarget=new Vec3(0,myself?360:-360);
             //直接攻击文字效果
             let lbNode=this.node.getChildByName("UIShow").getChildByName("LbTip");
@@ -1301,6 +1313,7 @@ export class GameControl extends Component {
             this.tableToRemain(data.uid,data.isMe);
         }else if(data.updateType==-4){
             console.log(data.uid,"陷阱卡发动效果",data.isMe);
+            AudioManager.inst.playOneShot("audio/trap_show");
             this.showTrapCard(data.value.uid,data.value.id);
             
             let callTime:number=setTimeout(()=>{
@@ -1314,6 +1327,7 @@ export class GameControl extends Component {
             protectCard.buffEffect(String(GameConfig.BUFF_PROTECT),1);
         }else if(data.updateType==3){
             console.log(data.uid,"卡牌使用",data.isMe);
+            AudioManager.inst.playOneShot("audio/trap_use");
             this.addTableCard(data.value,3,data.isMe);
         }else if(data.updateType==4){
             // console.log(data.uid,"陷阱卡效果发动",data.isMe);

@@ -5,6 +5,7 @@ import GameEvent from '../Base/GameEvent';
 import GameConfig from '../Base/GameConfig';
 import { CardItemControl } from './CardItemControl';
 import { AlertControl } from '../Common/AlertControl';
+import { AudioManager } from '../Base/AudioManager';
 const { ccclass, property } = _decorator;
 
 @ccclass('ArenaControl')
@@ -25,20 +26,15 @@ export class ArenaControl extends Component {
     canSelect:boolean=true;
     protected onLoad(): void {
         console.log("<<<<<<<<<<<<<<<onload arenaControl")
-        this.socketIO=SocketIO.Instance;
-        this.scrollList=this.node.getChildByName("ScrollView");
-        console.log("arenacontrol  onload",this.scrollList)
-        // this.scrollList.getComponent(ScrollView).content
-        // this.scrollList.getComponent(UITransform).height=view.getVisibleSize().height;
-        GameEvent.Instance.on("arena_info",this.reqAreanaInfo,this);
-        GameEvent.Instance.on("arena_selectInfo",this.reqAreanaSelect,this);
+        // this.socketIO=SocketIO.Instance;
+        // this.scrollList=this.node.getChildByName("ScrollView");
+        // console.log("arenacontrol  onload",this.scrollList)
+        // GameEvent.Instance.on("arena_info",this.reqAreanaInfo,this);
+        // GameEvent.Instance.on("arena_selectInfo",this.reqAreanaSelect,this);
+        // //游戏事件
+        // GameEvent.Instance.on("cardItemTouch",this.cardItemTouch,this);
 
-        //游戏事件
-        GameEvent.Instance.on("cardItemTouch",this.cardItemTouch,this);
-        //触摸事件
-        // this.node.on(NodeEventType.TOUCH_START,this.onTouchStart,this);
-
-        console.log("view",view.getVisibleSize())
+        // console.log("view",view.getVisibleSize())
         // let c=this.node.getParent().getComponent(UITransform).contentSize;
         // console.log("c>>",c)
     }
@@ -56,8 +52,18 @@ export class ArenaControl extends Component {
         
         // this.scrollList.getChildByName("view").getChildByName("content").removeAllChildren();
         // console.log("scrollView",this.scrollList.getComponent(ScrollView))
+        if(!this.socketIO){
+            this.socketIO=SocketIO.Instance;
+            this.scrollList=this.node.getChildByName("ScrollView");
+            GameEvent.Instance.on("arena_info",this.reqAreanaInfo,this);
+            GameEvent.Instance.on("arena_selectInfo",this.reqAreanaSelect,this);
+
+            //游戏事件
+            GameEvent.Instance.on("cardItemTouch",this.cardItemTouch,this);
+        }
         // this.scrollList=this.node.getChildByName("ScrollView");
-        console.log("<<<<getInfo",this.scrollList)
+        console.log(this.node,"<<<<getInfo",this.scrollList)
+        this.node.getChildByName("UISelect").active=false;   
         this.scrollList.getComponent(ScrollView).content.removeAllChildren();
         let node=this.node.getChildByName("UIInfo").getChildByName("leftShowCard");
         if(node) node.active=false;
@@ -88,7 +94,7 @@ export class ArenaControl extends Component {
             let cardControl=cardItem.getComponent(CardItemControl);
             num+=cardControl.count;
         }    
-        this.node.getChildByName("LbRightListCount").getComponent(Label).string=num+"/30";
+        this.node.getChildByName("LbRightListCount").getComponent(Label).string=num+"/"+GameConfig.CARD_COUNT_LIMIT;
         this.node.getChildByName("LbRightList").getComponent(Label).string=(selectType?GameConfig.FORCE_NAME[selectType]:"竞技")+"势力";
         if(data.length==0){
             console.log("卡组完成了");
@@ -169,6 +175,7 @@ export class ArenaControl extends Component {
             console.log("未处理完 不能点")
             return;
         }    
+        AudioManager.inst.playOneShot("audio/select_card");
         console.log("onBtSelect>>",data);
         let selectItem=this.node.getChildByName("UISelect").getChildByName("SelectItem"+data);
         let selectType=selectItem.getChildByName("Label").active?0:1;
@@ -202,6 +209,7 @@ export class ArenaControl extends Component {
         console.log("开始竞技");
         this.socketIO.socket.emit("ROOM", {
             type: "match_room",
+            gameType:1,
             user: this.socketIO.userID
         });
     }

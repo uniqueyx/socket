@@ -7,13 +7,14 @@ export default class GameConfig{
   static TABLEGENERAL_LIMIT:number = 5;//武将卡上限
   static TABLEMAGIC_LIMIT:number = 5;//魔法卡上限
   static INIT_HP:number = 100;//初始士气
+  static CARD_COUNT_LIMIT:number = 30;//卡组的卡牌数量上限
 
   //全局数据
   static CARD_DATA:Record<string,any>;//卡牌图鉴基础数据
   static USER_DATA:any;//玩家信息
 
   //http://localhost   http://192.168.101.8   http://192.168.71.8
-  static IP:string="http://192.168.71.9";
+  static IP:string="http://192.168.71.15";
   //buff
   static BUFF_TAUNT=101;//嘲讽
   static BUFF_SHIELD=102;//圣盾
@@ -27,8 +28,8 @@ export default class GameConfig{
   static COLOR_RARE16:string[]=["#ffffff","#21c800","#0000ff","#ff00ff","#ca7e36"];
 
   //势力名
-  static FORCE_NAME:string[]=["","黄巾","东汉","十常侍","盗贼"];
-  static FORCE_NAME_ICON:string[]=["","黄","汉","十","盗"];
+  static FORCE_NAME:string[]=["通用","黄巾","东汉","十常侍","盗贼"];
+  static FORCE_NAME_ICON:string[]=["通","黄","汉","十","盗"];
   
   //静态方法
   static getCardDataById(id:number):any{
