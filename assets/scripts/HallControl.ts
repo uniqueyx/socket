@@ -18,6 +18,7 @@ export class HallControl extends Component {
     onLoad(){
         this.loadData();
 
+        GameEvent.Instance.on("match_error",this.reqMatchError,this);
         GameEvent.Instance.on("match_success",this.reqMatchSuccess,this);
         GameEvent.Instance.on("match_wait",this.reqMatchWait,this);
         GameEvent.Instance.on("match_cancel",this.reqMatchCancel,this);
@@ -31,6 +32,7 @@ export class HallControl extends Component {
         
     }
     onDestroy(){
+        GameEvent.Instance.off("match_error",this.reqMatchError,this);
         GameEvent.Instance.off("match_success",this.reqMatchSuccess,this);
         GameEvent.Instance.off("match_wait",this.reqMatchWait,this);
         GameEvent.Instance.off("match_cancel",this.reqMatchCancel,this);
@@ -98,10 +100,13 @@ export class HallControl extends Component {
     onBtMatchCancel(){
         console.log("取消匹配");
         AudioManager.inst.playOneShot("audio/bt_back");
-        this.socketIO.socket.emit("ROOM", {
-            type: "match_cancel",
-            user: this.socketIO.userID
-        });
+        if(this.socketIO.socket.connected){
+            this.socketIO.socket.emit("ROOM", {
+                type: "match_cancel",
+                user: this.socketIO.userID
+            });
+        }else this.node.getChildByName("MatchMask").active=false;
+        
     }
 
     onBtArena(){
@@ -125,6 +130,9 @@ export class HallControl extends Component {
 
 
     //服务器消息事件处理
+    reqMatchError(data:unknown){
+        Toast.toast("先点击编辑卡组新建或启用匹配卡组！");
+    }
     reqMatchSuccess(data:unknown){
         console.log("服务器匹配成功事件 切换场景 游戏开始",data);
         director.loadScene("game");

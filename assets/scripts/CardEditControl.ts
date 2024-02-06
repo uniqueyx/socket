@@ -8,6 +8,7 @@ import { ForceItemControl } from './Game/ForceItemControl';
 import { CardItemControl } from './Game/CardItemControl';
 import { SocketIO } from './Base/SocketIO';
 import { CardEditItemControl } from './Game/CardEditItemControl';
+import { AudioManager } from './Base/AudioManager';
 const { ccclass, property } = _decorator;
 
 @ccclass('CardEditControl')
@@ -141,6 +142,8 @@ export class CardEditControl extends Component {
         GameEvent.Instance.off("cardEditTouchCancel",this.cardEditTouchCancel,this);
 
         GameEvent.Instance.off("cardEditItemSelect",this.cardEditItemSelect,this);
+
+        GameEvent.Instance.on("cardEditItemUse",this.cardEditItemUse,this);
 
         GameEvent.Instance.off("cardEdit_create",this.reqCardEditCreate,this);
         GameEvent.Instance.off("cardEdit_delete",this.reqCardEditDelete,this);
@@ -354,17 +357,20 @@ export class CardEditControl extends Component {
     }
     //绑定的按钮事件
     onBtPrevious(e:Event){
+        AudioManager.inst.playOneShot("audio/bt_middle");
         this.currentPage--;
         this.showNodeList(0);
         // this.judgePageBt();
     }
     onBtNext(e:Event){
         // console.log(e.currentTarget)
+        AudioManager.inst.playOneShot("audio/bt_middle");
         this.currentPage++;
         this.showNodeList(0);
         // this.judgePageBt();
     }
     onBtPreviousForce(e:Event){
+        AudioManager.inst.playOneShot("audio/bt_middle");
         this.currentPage=0;
         if(this.showDetail){
             this.currentForce=this.currentForce?0:this.selectForce;
@@ -375,6 +381,7 @@ export class CardEditControl extends Component {
         this.showNodeList(this.currentForce);
     }
     onBtNextForce(e:Event){
+        AudioManager.inst.playOneShot("audio/bt_middle");
         this.currentPage=0;
         if(this.showDetail){
             this.currentForce=this.currentForce?0:this.selectForce;
@@ -385,9 +392,21 @@ export class CardEditControl extends Component {
         this.showNodeList(this.currentForce);
     }
     onBtReturnHall(){
+        AudioManager.inst.playOneShot("audio/bt_back");
+        if(this.getCurrentCardCount()<GameConfig.CARD_COUNT_LIMIT){
+            // console.log("卡牌未编辑完成 不会保存");
+            let al= instantiate(this.Alert);
+            let aControl=al.getComponent(AlertControl);
+            aControl.show("卡组未编辑完成 不会保存当前卡组 确定返回大厅吗？",true,()=>{
+                director.loadScene("hall");
+            });
+            al.setParent(this.node);
+            return;
+        }
         director.loadScene("hall");
     }
     onBtMyCard(){
+        AudioManager.inst.playOneShot("audio/bt_middle");
         let cardList=this.node.getChildByName("CardList");
         if(this.getCurrentCardCount()<GameConfig.CARD_COUNT_LIMIT){
             // console.log("卡牌未编辑完成 不会保存");
@@ -407,6 +426,7 @@ export class CardEditControl extends Component {
     }
     //新建卡组
     onBtCreateCard(){
+        AudioManager.inst.playOneShot("audio/bt_middle");
         if(this.scrollDeckList.getComponent(ScrollView).content.children.length>=5){
             Toast.toast("您的卡组数量已达上限！")
             return;
@@ -426,6 +446,7 @@ export class CardEditControl extends Component {
     }
     //确定新建
     onBtCreateConfirm(){
+        AudioManager.inst.playOneShot("audio/bt_back");
         if(!this.cardNameEditBox.string){
             Toast.toast("请输入卡组名字");
             return;
@@ -446,11 +467,13 @@ export class CardEditControl extends Component {
     }
     //取消新建
     onBtCreateCancel(){
+        AudioManager.inst.playOneShot("audio/bt_back");
         // this.node.getChildByName("UI")
         this.node.getChildByName("UICreateCard").active=false;
     }
     //卡组改名
     onBtChangeName(){
+        AudioManager.inst.playOneShot("audio/bt_middle");
         if(this.scrollDeckList.getComponent(ScrollView).content.children.length==0){
             Toast.toast("您还没有卡组!先新建一个卡组吧！");
             return;
@@ -463,6 +486,7 @@ export class CardEditControl extends Component {
     }
     //确定改名
     onBtChangeNameConfirm(){
+        AudioManager.inst.playOneShot("audio/bt_back");
         if(!this.changeNameEditBox.string){
             Toast.toast("请输入卡组名字");
             return;
@@ -479,11 +503,13 @@ export class CardEditControl extends Component {
     }
     //取消改名
     onBtChangeNameCancel(){
+        AudioManager.inst.playOneShot("audio/bt_back");
         // this.node.getChildByName("UI")
         this.node.getChildByName("UIChangeName").active=false;
     }
     //编辑卡组
     onBtEditCard(){
+        AudioManager.inst.playOneShot("audio/bt_middle");
         if(this.scrollDeckList.getComponent(ScrollView).content.children.length==0){
             Toast.toast("您还没有卡组!先新建一个卡组吧！");
             return;
@@ -500,6 +526,7 @@ export class CardEditControl extends Component {
     }
     //删除卡组
     onBtDeleteCard(){
+        AudioManager.inst.playOneShot("audio/bt_middle");
         if(this.scrollDeckList.getComponent(ScrollView).content.children.length==0){
             Toast.toast("您还没有卡组!先新建一个卡组吧！");
             return;
@@ -516,6 +543,7 @@ export class CardEditControl extends Component {
     }
     //保存卡组
     onBtSaveCard(){
+        AudioManager.inst.playOneShot("audio/bt_middle");
         if(this.getCurrentCardCount()<GameConfig.CARD_COUNT_LIMIT){
             Toast.toast("卡牌数量不足，无法保存！");
             return;
@@ -564,7 +592,7 @@ export class CardEditControl extends Component {
         }else{
             let c= instantiate(this.Card);
             c.name="leftShowCard";
-            c.setPosition(105,view.getVisibleSize().height/2-90);
+            c.setPosition(270,view.getVisibleSize().height/2-90);
             c.setParent(this.node.getChildByName("UIInfo"));
             c.getComponent(CardControl).initData(0,id,0,nodeUI.children.length);
         }
@@ -601,10 +629,10 @@ export class CardEditControl extends Component {
         let node=this.node.getChildByName("UIMove");
         let moveCard=node.getChildByName("moveCard");
         console.log("cardItemEditTouchcancel>>currentpos",moveCard.position);
-        if(moveCard&&Math.abs(moveCard.position.x-this.initMovePos.x)<moveCard.getComponent(UITransform).width/2&&Math.abs(moveCard.position.y-this.initMovePos.y)<moveCard.getComponent(UITransform).height/2){
-            console.log("意外触发touch cancel")
-            return;
-        }
+        // if(moveCard&&Math.abs(moveCard.position.x-this.initMovePos.x)<moveCard.getComponent(UITransform).width/2&&Math.abs(moveCard.position.y-this.initMovePos.y)<moveCard.getComponent(UITransform).height/2){
+        //     console.log("意外触发touch cancel")
+        //     return;
+        // }
         this.node.getChildByName("UIInfo").removeAllChildren();
         if(moveCard&&this.scrollList.active){
             if(moveCard.position.x<180){
@@ -618,8 +646,9 @@ export class CardEditControl extends Component {
     }
     //点击选择势力
     forceItemSelect(data:any){
+        AudioManager.inst.playOneShot("audio/bt_small");
         this.selectForce=data.force;
-        console.log("选择势力",this.node.getChildByName("UICreateCard"))
+        // console.log("选择势力",this.node.getChildByName("UICreateCard"))
         let node=this.node.getChildByName("UICreateCard").getChildByName("NodeForce");
         for(const force of node.children){
             let forceItemControl=force.getComponent(ForceItemControl);
@@ -643,11 +672,11 @@ export class CardEditControl extends Component {
         if(moveCard){
             moveCard.setPosition(moveCard.position.x+data.posX,moveCard.position.y+data.posY)
             //判断移动范围过小是否隐藏 
-            if(data.judgeRect){
-                if(Math.abs(moveCard.position.x-this.initMovePos.x)<moveCard.getComponent(UITransform).width/2&&Math.abs(moveCard.position.y-this.initMovePos.y)<moveCard.getComponent(UITransform).height/2){
-                    moveCard.getComponent(UIOpacity).opacity=0;
-                }else moveCard.getComponent(UIOpacity).opacity=255;
-            }
+            // if(data.judgeRect){
+            //     if(Math.abs(moveCard.position.x-this.initMovePos.x)<moveCard.getComponent(UITransform).width/2&&Math.abs(moveCard.position.y-this.initMovePos.y)<moveCard.getComponent(UITransform).height/2){
+            //         moveCard.getComponent(UIOpacity).opacity=0;
+            //     }else moveCard.getComponent(UIOpacity).opacity=255;
+            // }
         }
     }
     cardEditTouchEnd(data:any){
@@ -691,7 +720,8 @@ export class CardEditControl extends Component {
     }
     //启用 设为匹配卡组
     cardEditItemUse(data:any){
-        console.log("点击设为匹配卡组",data);
+        console.log("点击设为匹配卡组",data,this.socketIO);
+        AudioManager.inst.playOneShot("audio/bt_small");
         this.socketIO.socket.emit("CARD", {
             type: "cardEdit_use",
             id:data.id,

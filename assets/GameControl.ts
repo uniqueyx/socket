@@ -184,7 +184,7 @@ export class GameControl extends Component {
     }
     //发送更换手牌消息
     onBtChangeHand(){
-        
+        AudioManager.inst.playOneShot("audio/bt_back");
         let cardNode=this.node.getChildByName("ChangeCardShow").getChildByName("NodeCard");
         // let changeNode=this.node.getChildByName("ChangeCardShow");
         let arr=[];
@@ -276,6 +276,7 @@ export class GameControl extends Component {
     judgeCondition(key:string,condition:any,value:any){
         if(condition==undefined) return true;//属性不存在跳过判断直接返回true
         switch(key){
+            case "name":
             case "rare":
             case "cardType":
                 if(String(condition).indexOf(String(value))!=-1) return true;
@@ -285,7 +286,7 @@ export class GameControl extends Component {
                 break;      
             case "force": 
             // case "rare":
-            case "name":
+            
                 if(condition==value) return true;
                 break;
             case "atk":
@@ -493,6 +494,7 @@ export class GameControl extends Component {
     }
     selectChangeCard(uid:number){
         if(this.changeHand) return;
+        AudioManager.inst.playOneShot("audio/bt_small");
         let redCross=this.node.getChildByName("ChangeCardShow").getChildByName(String(uid));
         // console.log(redCross.active,"选中卡",uid);
         if(redCross)    redCross.active=!redCross.active;
@@ -766,7 +768,7 @@ export class GameControl extends Component {
     }
     //抽牌逻辑
     drawCard(data:any,myself:boolean=true){
-        
+        AudioManager.inst.playOneShot("audio/draw_card");
         let overflow=data.overflow;
         let value=myself?1:-1;
         let posX=-120*value;//-120
@@ -902,12 +904,15 @@ export class GameControl extends Component {
     }
     //确定按钮 返回主页
     onBtConfirm(){
+        AudioManager.inst.playOneShot("audio/bt_back");
         director.loadScene("hall");
     }
     //HP改变
     updateHP(value:number,myself:boolean=true){
         if(value>0){
             AudioManager.inst.playOneShot("audio/hp");
+        }else if(value<0){
+            AudioManager.inst.playOneShot("audio/hp1");
         }
         //后续加减特效
         if(myself){
@@ -1001,6 +1006,7 @@ export class GameControl extends Component {
     //显示隐藏富文本按钮
     //显示隐藏面板
     onBtShowRichText(e:EventTouch){
+        AudioManager.inst.playOneShot("audio/bt_back");
         let actShow=this.node.getChildByName("ActShow");
         let lb=actShow.getChildByName("BtShow").getChildByName("Label").getComponent(Label);
         lb.string=lb.string=="显"?"隐":"显";
@@ -1135,6 +1141,7 @@ export class GameControl extends Component {
         this.initCard(data);
     }
     reqGameOver(data:any){
+        // AudioManager.inst.playOneShot("audio/card_magic");
         console.log("服务器游戏结束事件 游戏结束",data);
         this.unschedule(this.countDown);
         let node=this.node.getChildByName(data.result==1?"WinUI":"LoseUI");
@@ -1206,10 +1213,13 @@ export class GameControl extends Component {
         
         this.showTurnCountDown();
     }
-    
+    //useType 1通招 2特招 3陷阱 0魔法
     reqCardUsed(data:any){
         console.log("服务器卡牌使用事件 卡牌使用",data);
         this.removeHandCard(data.index,data.isMe);
+        if(data.id>20000&&data.id<30000) {
+            AudioManager.inst.playOneShot("audio/card_magic");
+        } 
         if(data.isMe){
             console.log("我方通招成功 通招次数-1")
             if(data.useType==1) this.useGeneralTimes--;
@@ -1221,7 +1231,9 @@ export class GameControl extends Component {
             c.getComponent(CardControl).initData(0,data.id,0,node.children.length);
             c.getComponent(CardControl).initParent(this.node.getChildByName("CardShow"));
             let dTime=0.7;
-            if(data.id>20000&&data.id<30000) dTime=1.2;
+            if(data.id>20000&&data.id<30000) {
+                dTime=1.2;
+            }    
             tween(c).to(0.3,{scale:new Vec3(1.1,1.1,1)}).
             delay(dTime).
             call(() => { 
@@ -1287,6 +1299,7 @@ export class GameControl extends Component {
     reqCardUpdate(data:any){
         console.log(">>>>服务器卡牌更新事件 卡牌更新",data);
         if(data.updateType==1){
+            AudioManager.inst.playOneShot("audio/card_enter");
             this.addTableCard(data.value,1,data.isMe);
         }else if(data.updateType==-1){
             console.log(data.uid,"卡牌破坏",data.isMe);
@@ -1296,6 +1309,10 @@ export class GameControl extends Component {
                 console.log("显示陷阱卡？？",data.value.id)
                 removeCard.changeData(data.value.id,data.uid);
                 dt=0.4;
+            }else{
+                if(removeCard.baseData.cardType==1){//武将死亡音效
+                    AudioManager.inst.playOneShot("audio/death1"+(Math.random()<0.5?1:2));
+                }
             }
             removeCard.disappear();//闪白shader
             tween(removeCard).delay(dt).hide().delay(0.1).show().delay(0.1).hide().delay(0.1).show().start();

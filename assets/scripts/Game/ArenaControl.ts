@@ -64,6 +64,7 @@ export class ArenaControl extends Component {
         // this.scrollList=this.node.getChildByName("ScrollView");
         console.log(this.node,"<<<<getInfo",this.scrollList)
         this.node.getChildByName("UISelect").active=false;   
+        this.node.getChildByName("LbSelect").active=false;   
         this.scrollList.getComponent(ScrollView).content.removeAllChildren();
         let node=this.node.getChildByName("UIInfo").getChildByName("leftShowCard");
         if(node) node.active=false;
@@ -193,6 +194,7 @@ export class ArenaControl extends Component {
     }
     //开始游戏
     onBtRestart(){
+        AudioManager.inst.playOneShot("audio/bt_middle");
         console.log("重新组卡");
         let al= instantiate(this.Alert);
         let aControl=al.getComponent(AlertControl);
@@ -206,6 +208,7 @@ export class ArenaControl extends Component {
     }
     //开始游戏
     onBtStartGame(){
+        AudioManager.inst.playOneShot("audio/bt_big");
         console.log("开始竞技");
         this.socketIO.socket.emit("ROOM", {
             type: "match_room",
@@ -214,6 +217,7 @@ export class ArenaControl extends Component {
         });
     }
     onBtReturnHall(){
+        AudioManager.inst.playOneShot("audio/bt_back");
         console.log("返回大厅");
         this.node.active=false;
     }

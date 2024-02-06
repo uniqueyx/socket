@@ -34,6 +34,7 @@ export class CardItemControl extends Component {
 
         this.node.getChildByName("LbCount").getComponent(Label).string=""+this.count;
         if(canTouch){
+            // return;
             this.node.getChildByName("Bg").on(NodeEventType.TOUCH_START,this.onTouchStart,this);
             this.node.getChildByName("Bg").on(NodeEventType.TOUCH_MOVE,this.onTouchMove,this);
             this.node.getChildByName("Bg").on(NodeEventType.TOUCH_END,this.onTouchEnd,this);
