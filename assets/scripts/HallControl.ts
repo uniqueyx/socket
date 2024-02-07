@@ -1,4 +1,4 @@
-import { _decorator, Component, Node, resources, JsonAsset, director, sys, Prefab, instantiate } from 'cc';
+import { _decorator, Component, Node, resources, JsonAsset, director, sys, Prefab, instantiate, NodeEventType, Label } from 'cc';
 import GameConfig from './Base/GameConfig';
 import GameEvent from './Base/GameEvent';
 import { SocketIO } from './Base/SocketIO';
@@ -14,6 +14,7 @@ export class HallControl extends Component {
     Alert:Prefab;
 
     socketIO=null;
+    dotCount:number;
 
     onLoad(){
         this.loadData();
@@ -28,7 +29,7 @@ export class HallControl extends Component {
         GameEvent.Instance.on("connected",this.reqConnected,this);
         GameEvent.Instance.on("connect_error",this.reqConnectError,this);
         // this.socketIO=SocketIO.Instance;
-
+        this.node.getChildByName("LeftTop").getChildByName("ImgHelp").on(NodeEventType.TOUCH_END,this.onBtHelp,this);
         
     }
     onDestroy(){
@@ -127,7 +128,15 @@ export class HallControl extends Component {
         // Toast.toast("功能开发中");
         director.loadScene("cardEdit");
     }
-
+    //帮助按钮
+    onBtHelp(){
+        AudioManager.inst.playOneShot("audio/bt_middle");
+        this.node.getChildByName("UIHelp").active=true;
+    }
+    onBtHelpConfirm(){
+        AudioManager.inst.playOneShot("audio/bt_back");
+        this.node.getChildByName("UIHelp").active=false;
+    }
 
     //服务器消息事件处理
     reqMatchError(data:unknown){
@@ -140,10 +149,30 @@ export class HallControl extends Component {
     reqMatchWait(data:unknown){
         console.log("服务器事件 matchwait",data);
         this.node.getChildByName("MatchMask").active=true;
+        this.dotCount=0;
+        this.node.getChildByName("MatchMask").getChildByName("Label").getComponent(Label).string='正在匹配对手 请您耐心等待';
+        this.schedule(this.updateLbWait,0.5);
+    }
+    updateLbWait(){
+        console.log("this.dotCount",this.dotCount)
+        let lb=this.node.getChildByName("MatchMask").getChildByName("Label").getComponent(Label);
+        // lb.string=String(this.countDownTime);
+        let str = '正在匹配对手 请您耐心等待';  
+        let dotCount = this.dotCount || 0;  
+        // 根据 dotCount 的值添加点号  
+        for (let i = 0; i < dotCount; i++) {  
+            str += '.';  
+        }  
+        // 更新 label 的文本  
+        lb.string = str;  
+        // 更新 dotCount 的值，使其在 0 到 3 之间循环  
+        dotCount = (dotCount + 1) % 4;  
+        this.dotCount = dotCount;  
     }
     reqMatchCancel(data:unknown){
         console.log("服务器事件 matchCancel",data);
         this.node.getChildByName("MatchMask").active=false;
+        this.unschedule(this.updateLbWait);
     }
     reqGameReturn(data:unknown){
         console.log("服务器事件 重连返回游戏",data);
@@ -165,11 +194,13 @@ export class HallControl extends Component {
     //连接成功
     reqConnected(data:unknown){
         console.log("socket连接成功");
-        this.node.getChildByName("LbConnect").active=false;
+        this.node.getChildByName("NodeConnect").active=false;
     }
     //socket错误
     reqConnectError(data:unknown){
-        this.node.getChildByName("LbConnect").active=true;
+        this.node.getChildByName("NodeConnect").active=true;
+        this.node.getChildByName("MatchMask").active=false;
+        this.unschedule(this.updateLbWait);
     }
 }
 

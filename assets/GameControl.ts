@@ -1,4 +1,4 @@
-import { _decorator, Component, Node, Prefab, instantiate, Vec3, Label, director, tween, view, Vec2, UITransform, Size, Rect, Color, NodeEventType, EventTouch, UIOpacity, RichText, Button } from 'cc';
+import { _decorator, Component, Node, Prefab, instantiate, Vec3, Label, director, tween, view, Vec2, UITransform, Size, Rect, Color, NodeEventType, EventTouch, UIOpacity, RichText, Button, Sprite } from 'cc';
 import GameConfig from './scripts/Base/GameConfig';
 import GameEvent from './scripts/Base/GameEvent';
 import { SocketIO } from './scripts/Base/SocketIO';
@@ -133,6 +133,9 @@ export class GameControl extends Component {
         this.turnCount=0;
         this.hp=GameConfig.INIT_HP;
         this.hpOther=GameConfig.INIT_HP;
+
+        // this.node.getChildByName("Bg").getComponent(Sprite).changeSpriteFrameFromAtlas
+
         this.node.getChildByName("UICenter").getChildByName("BtTurnEnd").active=false;
         this.node.getChildByName("UICenter").getChildByName("LbOtherTurn").active=false;
 
@@ -142,6 +145,7 @@ export class GameControl extends Component {
         this.node.getChildByName("LeftBottom").getChildByName("LbHP").getComponent(Label).string=String(GameConfig.INIT_HP);
         this.node.getChildByName("RightTop").getChildByName("LbHP").getComponent(Label).string=String(GameConfig.INIT_HP);
         
+        this.node.getChildByName("WaitUI").active=true;
         // this.node.getChildByName("ActShow").getComponent(UIOpacity).opacity=150;
     }
     countDown(){

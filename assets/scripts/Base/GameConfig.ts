@@ -13,8 +13,8 @@ export default class GameConfig{
   static CARD_DATA:Record<string,any>;//卡牌图鉴基础数据
   static USER_DATA:any;//玩家信息
 
-  //http://localhost   http://192.168.101.8   http://192.168.71.8
-  static IP:string="http://192.168.101.8";
+  //http://localhost   http://192.168.101.8   http://192.168.71.8  阿里云 http://47.116.171.22
+  static IP:string="http://localhost";
   //buff
   static BUFF_TAUNT=101;//嘲讽
   static BUFF_SHIELD=102;//圣盾

@@ -192,7 +192,22 @@ export class ArenaControl extends Component {
         //     this.canSelect=true;
         // },0.5);
     }
-    //开始游戏
+    //开始组卡
+    onStartCard(){
+        AudioManager.inst.playOneShot("audio/bt_middle");
+        console.log("开始组卡");
+        this.socketIO.socket.emit("ARENA", {
+            type: "arena_restart",
+            user: this.socketIO.userID
+        });
+        // let al= instantiate(this.Alert);
+        // let aControl=al.getComponent(AlertControl);
+        // aControl.show("重新组卡会清除当前组好的卡组，确定要重新组卡吗？",true,()=>{
+            
+        // });
+        // al.setParent(this.node);
+    }
+    //重新组卡
     onBtRestart(){
         AudioManager.inst.playOneShot("audio/bt_middle");
         console.log("重新组卡");
@@ -252,6 +267,11 @@ export class ArenaControl extends Component {
         console.log("服务器消息 竞技场信息",data);
         this.showList(data.selectedCards);
         this.showSelect(data.force?data.force:0,data.currentCards);
+        if(data.new){
+            this.node.getChildByName("BtSartCard").active=true;
+            this.node.getChildByName("BtRestart").active=false;    
+            this.node.getChildByName("BtStartGame").active=false;
+        }else this.node.getChildByName("BtSartCard").active=false;
     }
     reqAreanaSelect(data:any){
         console.log("服务器消息 竞技场选牌",data);

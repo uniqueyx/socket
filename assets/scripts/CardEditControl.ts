@@ -143,7 +143,7 @@ export class CardEditControl extends Component {
 
         GameEvent.Instance.off("cardEditItemSelect",this.cardEditItemSelect,this);
 
-        GameEvent.Instance.on("cardEditItemUse",this.cardEditItemUse,this);
+        GameEvent.Instance.off("cardEditItemUse",this.cardEditItemUse,this);
 
         GameEvent.Instance.off("cardEdit_create",this.reqCardEditCreate,this);
         GameEvent.Instance.off("cardEdit_delete",this.reqCardEditDelete,this);
