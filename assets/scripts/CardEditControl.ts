@@ -111,7 +111,9 @@ export class CardEditControl extends Component {
 
         this.allForce=GameConfig.FORCE_NAME.length;
         this.currentPage=0;
-        //测试
+
+        this.initCardList=[];
+        //左侧卡组图鉴
         this.showNodeList(0);
         //请求卡组列表
         this.socketIO.socket.emit("CARD", {
@@ -393,7 +395,8 @@ export class CardEditControl extends Component {
     }
     onBtReturnHall(){
         AudioManager.inst.playOneShot("audio/bt_back");
-        if(this.getCurrentCardCount()<GameConfig.CARD_COUNT_LIMIT){
+        //两种情况 新建完卡组满30没保存 编辑完卡组不满30没保存
+        if( (this.getCurrentCardCount()<GameConfig.CARD_COUNT_LIMIT&&this.showDetail) || (this.getCurrentCardCount()==GameConfig.CARD_COUNT_LIMIT&&this.initCardList.length==0)){
             // console.log("卡牌未编辑完成 不会保存");
             let al= instantiate(this.Alert);
             let aControl=al.getComponent(AlertControl);

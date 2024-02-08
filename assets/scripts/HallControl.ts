@@ -128,6 +128,9 @@ export class HallControl extends Component {
         // Toast.toast("功能开发中");
         director.loadScene("cardEdit");
     }
+    onBtDungeon(){
+        AudioManager.inst.playOneShot("audio/bt_big");
+    }
     //帮助按钮
     onBtHelp(){
         AudioManager.inst.playOneShot("audio/bt_middle");

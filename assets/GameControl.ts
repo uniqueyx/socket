@@ -115,7 +115,7 @@ export class GameControl extends Component {
 
     test(){
         console.log('test>>',this.Card);
-        director.loadScene("gameScene");
+        director.loadScene("hall");
     }
     judgeTest(){
         console.log("judgeTest")
@@ -1161,7 +1161,7 @@ export class GameControl extends Component {
         let al= instantiate(this.Alert);
         let aControl=al.getComponent(AlertControl);
         aControl.show("由于玩家长时间没准备 游戏解散！",false,()=>{
-            director.loadScene("gameScene");
+            director.loadScene("hall");
         });
         al.setParent(this.node);
     }
