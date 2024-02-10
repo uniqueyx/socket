@@ -14,7 +14,7 @@ export default class GameConfig{
   static USER_DATA:any;//玩家信息
 
   //http://localhost   http://192.168.101.8   http://192.168.71.8  阿里云 http://47.116.171.22
-  static IP:string="http://localhost";
+  static IP:string="http://47.116.171.22";
   //buff
   static BUFF_TAUNT=101;//嘲讽
   static BUFF_SHIELD=102;//圣盾

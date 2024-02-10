@@ -1427,7 +1427,7 @@ export class GameControl extends Component {
             let cardNum=hNode.children.length;
             // return;//暂时未完成
             if(cardNum>=GameConfig.HANDCARD_LIMIT) overflow=data.value.id;
-            let obj:Object={overflow:overflow};
+            let obj:Object={overflow:overflow,uid:data.uid};
             if(data.isMe){
                 obj={id:data.value.id,uid:data.uid,overflow:overflow};
             }
@@ -1452,18 +1452,23 @@ export class GameControl extends Component {
     }
     reqCardChangeHand(data:any){
         console.log("服务器更换手牌事件 ",data);
-        this.changeHand=true;
-        this.node.getChildByName("ChangeCardShow").getChildByName("BtConfirm").active=false;
-        this.node.getChildByName("ChangeCardShow").getChildByName("LbResult").active=true;
         let changeNode=this.node.getChildByName("ChangeCardShow").getChildByName("NodeCard");
-        for(const changeCard of changeNode.children){
-            let redCrossNode=this.node.getChildByName("ChangeCardShow").getChildByName(String(changeCard.getComponent(CardControl).uid));
-            if(redCrossNode){
-                console.log("<<<<<<<<<<<<<<<<<<<<<<移除红叉");
-                redCrossNode.removeFromParent();
-            }    
-        }    
-        let hNode=this.node.getChildByName("RightBottom");
+        if(!data.isMe) changeNode=this.node.getChildByName("Top");
+        if(data.isMe){
+            this.changeHand=true;
+            this.node.getChildByName("ChangeCardShow").getChildByName("BtConfirm").active=false;
+            this.node.getChildByName("ChangeCardShow").getChildByName("LbResult").active=true;
+            for(const changeCard of changeNode.children){
+                let redCrossNode=this.node.getChildByName("ChangeCardShow").getChildByName(String(changeCard.getComponent(CardControl).uid));
+                if(redCrossNode){
+                    console.log("<<<<<<<<<<<<<<<<<<<<<<移除红叉");
+                    redCrossNode.removeFromParent();
+                }    
+            } 
+        }
+        
+           
+        let hNode=this.node.getChildByName(data.isMe?"RightBottom":"LeftTop");
         for(let i=0;i<data.cardList.length;i++){
             let uid=data.cardList[i];
             let cardNew=data.newList[i];
@@ -1473,11 +1478,11 @@ export class GameControl extends Component {
                         let initPos=new Vec3(changeCard.position.x,changeCard.position.y);
                         tween(changeCard).
                         // to(0.3,{position:handPosition}).
-                        to(0.3,{position:hNode.position}).
+                        to(0.3,{position:data.isMe?hNode.position:new Vec3(-305,-40)}).
                         to(0.1,{scale:new Vec3(0, 0, 0)}).
                         call(() => { 
                             console.log("返回tween结束 更换卡牌数据 抽牌tween");
-                            changeCard.getComponent(CardControl).changeData(cardNew.id,cardNew.uid);
+                            changeCard.getComponent(CardControl).changeData(data.isMe?cardNew.id:0,cardNew.uid);
                         }).
                         to(0.1,{scale:new Vec3(1, 1, 1)}).
                         to(0.3,{position:initPos}).
