@@ -6,6 +6,7 @@ import GameConfig from '../Base/GameConfig';
 import { CardItemControl } from './CardItemControl';
 import { AlertControl } from '../Common/AlertControl';
 import { AudioManager } from '../Base/AudioManager';
+import Toast from '../Base/Toast';
 const { ccclass, property } = _decorator;
 
 @ccclass('ArenaControl')
@@ -16,8 +17,8 @@ export class ArenaControl extends Component {
     @property(Prefab)
     CardItem:Prefab;
 
-    @property(Prefab)
-    Alert:Prefab;
+    // @property(Prefab)
+    // Alert:Prefab;
 
     scrollList:Node;
 
@@ -211,15 +212,21 @@ export class ArenaControl extends Component {
     onBtRestart(){
         AudioManager.inst.playOneShot("audio/bt_middle");
         console.log("重新组卡");
-        let al= instantiate(this.Alert);
-        let aControl=al.getComponent(AlertControl);
-        aControl.show("重新组卡会清除当前组好的卡组，确定要重新组卡吗？",true,()=>{
+        Toast.alert("重新组卡会清除当前组好的卡组，确定要重新组卡吗？",true,()=>{
             this.socketIO.socket.emit("ARENA", {
                 type: "arena_restart",
                 user: this.socketIO.userID
             });
         });
-        al.setParent(this.node);
+        // let al= instantiate(this.Alert);
+        // let aControl=al.getComponent(AlertControl);
+        // aControl.show("重新组卡会清除当前组好的卡组，确定要重新组卡吗？",true,()=>{
+        //     this.socketIO.socket.emit("ARENA", {
+        //         type: "arena_restart",
+        //         user: this.socketIO.userID
+        //     });
+        // });
+        // al.setParent(this.node);
     }
     //开始游戏
     onBtStartGame(){

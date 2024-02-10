@@ -13,8 +13,8 @@ const { ccclass, property } = _decorator;
 
 @ccclass('CardEditControl')
 export class CardEditControl extends Component {
-    @property(Prefab)
-    Alert:Prefab;
+    // @property(Prefab)
+    // Alert:Prefab;
 
     @property(Prefab)
     Card:Prefab;
@@ -398,12 +398,15 @@ export class CardEditControl extends Component {
         //两种情况 新建完卡组满30没保存 编辑完卡组不满30没保存
         if( (this.getCurrentCardCount()<GameConfig.CARD_COUNT_LIMIT&&this.showDetail) || (this.getCurrentCardCount()==GameConfig.CARD_COUNT_LIMIT&&this.initCardList.length==0)){
             // console.log("卡牌未编辑完成 不会保存");
-            let al= instantiate(this.Alert);
-            let aControl=al.getComponent(AlertControl);
-            aControl.show("卡组未编辑完成 不会保存当前卡组 确定返回大厅吗？",true,()=>{
+            Toast.alert("卡组未编辑完成 不会保存当前卡组 确定返回大厅吗？",true,()=>{
                 director.loadScene("hall");
             });
-            al.setParent(this.node);
+            // let al= instantiate(this.Alert);
+            // let aControl=al.getComponent(AlertControl);
+            // aControl.show("卡组未编辑完成 不会保存当前卡组 确定返回大厅吗？",true,()=>{
+            //     director.loadScene("hall");
+            // });
+            // al.setParent(this.node);
             return;
         }
         director.loadScene("hall");
@@ -413,14 +416,19 @@ export class CardEditControl extends Component {
         let cardList=this.node.getChildByName("CardList");
         if(this.getCurrentCardCount()<GameConfig.CARD_COUNT_LIMIT){
             // console.log("卡牌未编辑完成 不会保存");
-            let al= instantiate(this.Alert);
-            let aControl=al.getComponent(AlertControl);
-            aControl.show("卡组未编辑完成 不会保存当前卡组 确定返回我的卡组列表吗？",true,()=>{
+            Toast.alert("卡组未编辑完成 不会保存当前卡组 确定返回我的卡组列表吗？",true,()=>{
                 this.showBtState(false);
                 this.currentPage=0;
                 this.showNodeList(0);
             });
-            al.setParent(this.node);
+            // let al= instantiate(this.Alert);
+            // let aControl=al.getComponent(AlertControl);
+            // aControl.show("卡组未编辑完成 不会保存当前卡组 确定返回我的卡组列表吗？",true,()=>{
+            //     this.showBtState(false);
+            //     this.currentPage=0;
+            //     this.showNodeList(0);
+            // });
+            // al.setParent(this.node);
             return;
         }
         this.showBtState(false);

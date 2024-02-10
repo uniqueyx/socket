@@ -6,6 +6,7 @@ import io from 'socket.io-client/dist/socket.io.js'
 import GameEvent from "./GameEvent";
 import Toast from "./Toast";
 import GameConfig from "./GameConfig";
+import { director } from "cc";
 // import io from 'socket.io/client-dist/socket.io.js'
 
 // @ccclass('SocketIO')
@@ -54,7 +55,9 @@ export class SocketIO extends Singleton {
         this.socket.on("GAME",(data: any) => {
             this.onSocketHandle(data);
         });
-        
+        this.socket.on("ERROR",(data: any) => {
+            this.onSocketHandle(data);
+        });
         
         // 判断是否断开
         this.socket.on('disconnect', (data: any) => {
@@ -98,12 +101,20 @@ export class SocketIO extends Singleton {
         GameEvent.Instance.emit(data.type,data);
         // GameEvent.Instance.emit("test");
         // console.log("发送完emit>>>>>");
+        // director.loadScene()
         switch(data.type){
-            case "match_success":
-                console.log('匹配成功');
+            case "login_repeat":
+                Toast.alert("您的账号已在其他设备上登录！",false,()=>{
+                    this.socket.disconnect();
+                    this.userID=null;
+                    director.loadScene("login");
+                });
                 break;
-            case "game_start":
-                console.log('游戏开始');
+            case "common_error":
+                Toast.toast(data.msg);
+                // Toast.alert(data.msg,false,()=>{
+                //     director.loadScene("hall");
+                // });
                 break;
         }
     }

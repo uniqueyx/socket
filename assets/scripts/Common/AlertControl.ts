@@ -32,16 +32,20 @@ export class AlertControl extends Component {
     //预制体绑定事件
     onBtConfirm(){
         AudioManager.inst.playOneShot("audio/bt_back");
-        console.log("alert确定",this.confirmCall);
+        // console.log("alert确定",this.confirmCall);
         if(this.confirmCall){
-            this.confirmCall(5);
-            console.log("确定回调")
+            this.confirmCall();
+            console.log("alert确定回调");
         }
         this.node.active=false;
     }
     onBtCancel(){
         AudioManager.inst.playOneShot("audio/bt_back");
-        console.log("alert取消",this.cancelCall);
+        // console.log("alert取消",this.cancelCall);
+        if(this.cancelCall){
+            this.cancelCall();
+            console.log("alert取消回调");
+        }
         this.node.active=false;
     }
 }

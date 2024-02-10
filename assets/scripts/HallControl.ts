@@ -10,8 +10,8 @@ const { ccclass, property } = _decorator;
 
 @ccclass('HallControl')
 export class HallControl extends Component {
-    @property(Prefab)
-    Alert:Prefab;
+    // @property(Prefab)
+    // Alert:Prefab;
 
     socketIO=null;
     dotCount:number;
@@ -31,7 +31,32 @@ export class HallControl extends Component {
         // this.socketIO=SocketIO.Instance;
         this.node.getChildByName("LeftTop").getChildByName("ImgHelp").on(NodeEventType.TOUCH_END,this.onBtHelp,this);
         
+        //"prefab/Explosion"
+        // await Promise.all([this.loadRes(), this.connectServer()]);
     }
+    // async loadRes() {
+    //     const list = [];
+    //     for (const type in PrefabPathEnum) {
+    //       const p = ResourceManager.Instance.loadRes(PrefabPathEnum[type], Prefab).then((prefab) => {
+    //         DataManager.Instance.prefabMap.set(type, prefab);
+    //       });
+    //       list.push(p);
+    //     }
+    //     for (const type in TexturePathEnum) {
+    //       const p = ResourceManager.Instance.loadDir(TexturePathEnum[type], SpriteFrame).then((spriteFrames) => {
+    //         DataManager.Instance.textureMap.set(type, spriteFrames);
+    //       });
+    //       list.push(p);
+    //     }
+    //     await Promise.all(list);
+    //   }
+    
+    //   async connectServer() {
+    //     if (!(await NetworkManager.Instance.connect().catch(() => false))) {
+    //       await new Promise((resolve) => setTimeout(resolve, 1000));
+    //       await this.connectServer();
+    //     }
+    //   }
     onDestroy(){
         GameEvent.Instance.off("match_error",this.reqMatchError,this);
         GameEvent.Instance.off("match_success",this.reqMatchSuccess,this);
@@ -111,6 +136,9 @@ export class HallControl extends Component {
     }
 
     onBtArena(){
+        // Toast.alert("测试alert",true,()=>{this.onBtEditCard()})
+        // return;//测试代码
+
         AudioManager.inst.playOneShot("audio/bt_big");
         if(!this.socketIO.socket.connected){
             Toast.toast("服务器连接失败！");
@@ -157,7 +185,7 @@ export class HallControl extends Component {
         this.schedule(this.updateLbWait,0.5);
     }
     updateLbWait(){
-        console.log("this.dotCount",this.dotCount)
+        // console.log("this.dotCount",this.dotCount)
         let lb=this.node.getChildByName("MatchMask").getChildByName("Label").getComponent(Label);
         // lb.string=String(this.countDownTime);
         let str = '正在匹配对手 请您耐心等待';  
@@ -184,20 +212,27 @@ export class HallControl extends Component {
     //重复登录
     reqLoginRepeat(data:unknown){
         console.log("服务器事件 重复登录",data);
-        let al= instantiate(this.Alert);
-        let aControl=al.getComponent(AlertControl);
-        aControl.show("您的账号已在其他地方登录！",false,()=>{
-            this.socketIO.socket.disconnect();
-            this.socketIO.userID=null;
-            director.loadScene("login");
-        });
-        al.setParent(this.node);
+        // let al= instantiate(this.Alert);
+        // let aControl=al.getComponent(AlertControl);
+        // aControl.show("您的账号已在其他地方登录！",false,()=>{
+        //     this.socketIO.socket.disconnect();
+        //     this.socketIO.userID=null;
+        //     director.loadScene("login");
+        // });
+        // al.setParent(this.node);
+        // Toast.alert("您的账号已在其他地方登录！",false,()=>{
+        //     this.socketIO.socket.disconnect();
+        //     this.socketIO.userID=null;
+        //     director.loadScene("login");
+        // });
     }
 
     //连接成功
     reqConnected(data:unknown){
         console.log("socket连接成功");
         this.node.getChildByName("NodeConnect").active=false;
+        Toast.alertHide();
+        // if(this.node.getChildByName("Alert"))    this.node.getChildByName("Alert").active=false;
     }
     //socket错误
     reqConnectError(data:unknown){

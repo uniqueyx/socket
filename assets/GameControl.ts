@@ -1,4 +1,4 @@
-import { _decorator, Component, Node, Prefab, instantiate, Vec3, Label, director, tween, view, Vec2, UITransform, Size, Rect, Color, NodeEventType, EventTouch, UIOpacity, RichText, Button, Sprite } from 'cc';
+import { _decorator, Component, Node, Prefab, instantiate, Vec3, Label, director, tween, view, Vec2, UITransform, Size, Rect, Color, NodeEventType, EventTouch, UIOpacity, RichText, Button, Sprite, Tween } from 'cc';
 import GameConfig from './scripts/Base/GameConfig';
 import GameEvent from './scripts/Base/GameEvent';
 import { SocketIO } from './scripts/Base/SocketIO';
@@ -12,8 +12,8 @@ const { ccclass, property } = _decorator;
 export class GameControl extends Component {
     @property(Prefab)
     Card:Prefab;
-    @property(Prefab)
-    Alert:Prefab;
+    // @property(Prefab)
+    // Alert:Prefab;
     @property(Prefab)
     RedCross:Prefab;
 
@@ -37,11 +37,13 @@ export class GameControl extends Component {
         // GameEvent.Instance.on("match_success")
         this.socketIO=SocketIO.Instance;
         this.cardTable=this.node.getChildByName("CardTable");
+        GameEvent.Instance.on("connected",this.reqConnected,this);
         GameEvent.Instance.on("disconnect",this.reqDisconnect,this);
         GameEvent.Instance.on("game_start",this.reqGameStart,this);
         GameEvent.Instance.on("game_data",this.reqGameData,this);
         GameEvent.Instance.on("card_info",this.reqCardInfo,this);
         GameEvent.Instance.on("game_over",this.reqGameOver,this);
+        GameEvent.Instance.on("game_error",this.reqError,this);
         GameEvent.Instance.on("game_dissolve",this.reqGameDissolve,this);
         GameEvent.Instance.on("draw",this.reqDraw,this);
         GameEvent.Instance.on("draw_other",this.reqDrawOther,this);
@@ -66,10 +68,8 @@ export class GameControl extends Component {
         
         this.initUI();
         //发送准备开始消息
-        this.socketIO.socket.emit("GAME", {
-            type: "game_ready",
-            user: this.socketIO.userID
-        });
+        this.sendGameReady();
+        
         console.log( '<<onload     socket  userid',this.socketIO.userID );
         return;
         if(this.Card){
@@ -89,6 +89,7 @@ export class GameControl extends Component {
         GameEvent.Instance.off("game_data",this.reqGameData,this);
         GameEvent.Instance.off("card_info",this.reqCardInfo,this);
         GameEvent.Instance.off("game_over",this.reqGameOver,this);
+        GameEvent.Instance.on("game_error",this.reqError,this);
         GameEvent.Instance.off("game_dissolve",this.reqGameDissolve,this);
         GameEvent.Instance.off("draw",this.reqDraw,this);
         GameEvent.Instance.off("draw_other",this.reqDrawOther,this);
@@ -127,6 +128,14 @@ export class GameControl extends Component {
     }
 
     //==================方法
+    sendGameReady(){
+        if(this.socketIO.socket){
+            this.socketIO.socket.emit("GAME", {
+                type: "game_ready",
+                user: this.socketIO.userID
+            });
+        }
+    }
     initUI(){
         this.useGeneralTimes=1;
         this.actString="";
@@ -168,15 +177,19 @@ export class GameControl extends Component {
     }
     //投降
     onBtSurrender(){
+        //测试代码
+
         AudioManager.inst.playOneShot("audio/bt_back");
         console.log("发送 投降");
-        let al= instantiate(this.Alert);
-        let aControl=al.getComponent(AlertControl);
-        aControl.show("确定投降结束本局对战吗？",true,()=>{
+        Toast.alert("确定投降结束本局对战吗？",true,()=>{
             this.sendSurrender();
         });
-        al.setParent(this.node);
-        
+        // let al= instantiate(this.Alert);
+        // let aControl=al.getComponent(AlertControl);
+        // aControl.show("确定投降结束本局对战吗？",true,()=>{
+        //     this.sendSurrender();
+        // });
+        // al.setParent(this.node);
     }
     //发送投降消息
     sendSurrender(){
@@ -357,6 +370,7 @@ export class GameControl extends Component {
             type: "card_use",
             user: SocketIO.Instance.userID,
             index:cardControl.index,
+            uid:cardControl.uid
         });
         return true;
     }
@@ -633,7 +647,7 @@ export class GameControl extends Component {
         for(const card of node.children){
             let cardC=card.getComponent(CardControl);
             if(cardC&&cardC.posType==(myself?2:12)&&cardC.index>index){
-                if( (cardType==1&&cardC.baseData.cardType==cardType) || (cardType>1&&(!cardC.baseData|| (cardC.baseData&&cardC.baseData.cardType>1) ) ) ){
+                if( (cardType==1&&cardC.baseData&&cardC.baseData.cardType==cardType) || (cardType>1&&(!cardC.baseData|| (cardC.baseData&&cardC.baseData.cardType>1) ) ) ){
                     cardC.index--;
                 }
             }
@@ -717,19 +731,34 @@ export class GameControl extends Component {
             }
         }
     }
-    //移除手牌
-    removeHandCard(index:number,myself:boolean=true){
+    //移除手牌  index 换成 uid 
+    removeHandCard(uid:number,myself:boolean=true){
         let node=this.node.getChildByName(myself?"Bottom":"Top");
+        let targetCard;
+        let index=-1;
+        let num=0
         for(const card of node.children){
-            if(card.getComponent(CardControl).index==index){
+            // if(card.getComponent(CardControl).index==index){
+            //     card.removeFromParent();
+            // }
+            console.log(num++,uid,"对比uid",card.getComponent(CardControl).uid)
+            if(card.getComponent(CardControl).uid==uid){
+                targetCard=card;
+                index=card.getComponent(CardControl).index;
+                // card.removeFromParent();
                 card.removeFromParent();
             }
         }    
+        if(index==-1){
+            console.log("移除手牌 没找到对应Uid 有BUG？？？？？？？？？？？？？？？？？？");
+            return;
+        }
         for(const card of node.children){
             if(card.getComponent(CardControl).index>index){
                 card.getComponent(CardControl).index--;
             }
         }
+        
         this.updateHandCardPos(myself);
         console.log("==removeHandCard 移除手牌后数量",node.children);
     }
@@ -748,7 +777,7 @@ export class GameControl extends Component {
         let c= instantiate(this.Card);
         // c.setPosition(305*value,40*value);//牌组坐标
         c.setPosition(hposX,0);
-        c.getComponent(CardControl).initData(myself?1:11,data.overflow?data.overflow:data.id,data.overflow?0:data.uid,hNode.children.length);
+        c.getComponent(CardControl).initData(myself?1:11,data.overflow?data.overflow:data.id,data.uid,hNode.children.length);//data.overflow?0:data.uid
         c.getComponent(CardControl).initParent(hNode);
 
         if(data.overflow){
@@ -1093,14 +1122,27 @@ export class GameControl extends Component {
             start();
     }
     //===================服务器消息事件处理
+    //重连成功
+    reqConnected(data:any){
+        console.log("游戏中 服务器重连成功",data);
+        Toast.alertHide();
+        // if(this.node.getChildByName("Alert")){
+        //     this.node.getChildByName("Alert").active=false;
+        // }
+        //此处有BUG 应该等待重连完成socket存在再发送game_ready
+        this.sendGameReady();    
+    }
     reqDisconnect(data:any){
-        console.log("服务器断开连接",data);
-        let al= instantiate(this.Alert);
-        let aControl=al.getComponent(AlertControl);
-        aControl.show("网络异常 断开连接",false,()=>{
+        Toast.alert("网络异常 断开连接",false,()=>{
             director.loadScene("login");
         });
-        al.setParent(this.node);
+        // let al= instantiate(this.Alert);
+        // console.log(al.name,"服务器断开连接",data,al);
+        // let aControl=al.getComponent(AlertControl);
+        // aControl.show("网络异常 断开连接",false,()=>{
+        //     director.loadScene("login");
+        // });
+        // al.setParent(this.node);
     }
     reqGameStart(data:any){
         console.log("服务器匹配成功事件 游戏开始",data);
@@ -1113,6 +1155,7 @@ export class GameControl extends Component {
     }
     reqGameData(data:any){
         console.log("游戏重连数据",data);
+        Tween.stopAll();
         this.first=data.first;
         this.gameState=data.gameState;
         this.myTurn=data.myTurn;
@@ -1139,6 +1182,8 @@ export class GameControl extends Component {
         // this.node.getChildByName("ChangeCardShow").getChildByName("LabelFirst").getComponent(Label).string=this.first?"你是先攻":"你是后攻";
         // this.node.getChildByName("ChangeCardShow").active=true;
         this.node.getChildByName("WaitUI").active=this.gameState<2;
+
+        this.initCard(data.cardData);
     }
     reqCardInfo(data:any){
         console.log("服务器卡牌信息事件 卡牌信息",data);
@@ -1156,14 +1201,29 @@ export class GameControl extends Component {
         else if(data.winType==3) str+="投降";
         node.getChildByName("LbResult").getComponent(Label).string=str;
     }
-    reqGameDissolve(data:any){
-        console.log("服务器游戏解散事件 游戏解散",data);
-        let al= instantiate(this.Alert);
-        let aControl=al.getComponent(AlertControl);
-        aControl.show("由于玩家长时间没准备 游戏解散！",false,()=>{
+    reqError(data:any){
+        console.log("服务器游戏错误信息",data);
+        Toast.alert(data.msg,false,()=>{
             director.loadScene("hall");
         });
-        al.setParent(this.node);
+        // let al= instantiate(this.Alert);
+        // let aControl=al.getComponent(AlertControl);
+        // aControl.show(data.msg,false,()=>{
+        //     director.loadScene("hall");
+        // });
+        // al.setParent(this.node); 
+    }
+    reqGameDissolve(data:any){
+        console.log("服务器游戏解散事件 游戏解散",data);
+        Toast.alert("由于玩家长时间没准备 游戏解散！",false,()=>{
+            director.loadScene("hall");
+        });
+        // let al= instantiate(this.Alert);
+        // let aControl=al.getComponent(AlertControl);
+        // aControl.show("由于玩家长时间没准备 游戏解散！",false,()=>{
+        //     director.loadScene("hall");
+        // });
+        // al.setParent(this.node);
     }
     reqDraw(data:any){
         console.log("服务器抽卡事件 抽卡",data);
@@ -1220,7 +1280,7 @@ export class GameControl extends Component {
     //useType 1通招 2特招 3陷阱 0魔法
     reqCardUsed(data:any){
         console.log("服务器卡牌使用事件 卡牌使用",data);
-        this.removeHandCard(data.index,data.isMe);
+        this.removeHandCard(data.uid,data.isMe);
         if(data.id>20000&&data.id<30000) {
             AudioManager.inst.playOneShot("audio/card_magic");
         } 

@@ -1,8 +1,52 @@
-import { Color, Director, director, find, Graphics, Label, Layers, Node, tween, UITransform, Vec2, Vec3 } from "cc";
+import { Color, Director, director, find, Graphics, instantiate, Label, Layers, Node, Prefab, resources, tween, UITransform, Vec2, Vec3 } from "cc";
+import { AlertControl } from "../Common/AlertControl";
 
 export default class Toast{
   
   //静态方法
+  /**Alert*/  
+  private static alertPrefab:Prefab;
+  private static alertNode:Node;// 特别注意 切换场景后 alertNode.parent会被销毁 需要重新赋值
+  public static alert(str:string,showBtCancel:boolean=true,call:Function=null,cancel:Function=null){
+    if(this.alertPrefab)    {
+        // console.log("存在 alertprefab");
+        this.initAlert(str,showBtCancel,call,cancel);
+    }    
+    else{
+        // console.log("不存在 alertprefab  load");
+        resources.load("prefabs/Alert", Prefab, (err, res) => {
+            if (err) {
+              console.log("加载错误"+err);
+              return;
+            }
+            this.alertPrefab=res;
+            this.initAlert(str,showBtCancel,call,cancel);
+        });
+    }
+  }
+  private static initAlert(str:string,showBtCancel:boolean=true,call:Function=null,cancel:Function=null){
+    // console.log("initAlert");
+    const Canvas = find("Canvas");
+    // const CanvasSize = Canvas.getComponent(UITransform).contentSize;
+    
+    if(!this.alertNode||!this.alertNode.parent) {
+        // console.log("不存在 alertNode");
+        this.alertNode= instantiate(this.alertPrefab);
+        this.alertNode.setPosition(0,0);
+        this.alertNode.setParent(Canvas);
+    }else{
+        // console.log("存在 alertNode");
+        this.alertNode.active=true;
+    }
+     
+    let aControl=this.alertNode.getComponent(AlertControl);
+    aControl.show(str,showBtCancel,call,cancel);
+  }
+  //隐藏alert弹窗
+  public static alertHide(){
+    if(this.alertNode) this.alertNode.active=false;
+  }
+  
   /**飘字提醒对象池*/
   private static toastPools: Array<Node> = [];
   /**显示飘字提醒*/
@@ -54,7 +98,7 @@ export default class Toast{
           })
           .start()
   }
-  /**显示提示tip*/
+  /**显示提示tip框*/
   private static tipNode:Node;
   public static showTip(str:string,pos:Vec3|Vec2){
         const Canvas = find("Canvas");
