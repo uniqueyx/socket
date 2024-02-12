@@ -502,6 +502,10 @@ export class CardEditControl extends Component {
             Toast.toast("请输入卡组名字");
             return;
         }
+        if(this.selectCard&&this.selectCard.getComponent(CardEditItemControl).cardName==this.changeNameEditBox.string){
+            Toast.toast("卡组名和原来的相同!");
+            return;
+        }
         // console.log("创建卡组 开始编辑");
         // this.createCardName=this.cardNameEditBox.string;
         this.socketIO.socket.emit("CARD", {

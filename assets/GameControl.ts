@@ -148,6 +148,7 @@ export class GameControl extends Component {
 
         this.node.getChildByName("UICenter").getChildByName("BtTurnEnd").active=false;
         this.node.getChildByName("UICenter").getChildByName("LbOtherTurn").active=false;
+        this.node.getChildByName("UIShow").active=false;
 
         this.node.getChildByName("ActShow").getChildByName("RichText").getComponent(RichText).string="";
         this.node.getChildByName("ActShow").getChildByName("RichTextBg").getComponent(UITransform).height=0;
@@ -686,6 +687,7 @@ export class GameControl extends Component {
                 let hNode=this.node.getChildByName(myself?"RightBottom":"LeftTop");
                 let hposX=0;//180*value;//手牌最后一张的坐标
                 let handPosition=new Vec3(hNode.position.x+hposX,hNode.position.y);
+                Tween.stopAllByTarget(card);//移除 例如攻击tween
                 tween(card).to(0.3,{position:handPosition}).
                 call(() => { 
                     //更新卡组数量
@@ -711,6 +713,7 @@ export class GameControl extends Component {
                 let hposX=180*value;//手牌最后一张的坐标
                 // let handPosition=new Vec3(hposX,0);
                 let handPosition=new Vec3(hNode.position.x+hposX,hNode.position.y);
+                Tween.stopAllByTarget(card);//移除 例如攻击tween
                 tween(card).to(0.3,{position:handPosition}).
                 call(() => { 
 
@@ -951,8 +954,10 @@ export class GameControl extends Component {
         //后续加减特效
         if(myself){
             this.hp+=value;
+            if(this.hp<0) this.hp=0;
         }else{
             this.hpOther+=value;
+            if(this.hpOther<0) this.hpOther=0;
         }
         let node=this.node.getChildByName(myself?"LeftBottom":"RightTop");
         Toast.tip(String(value>=0?("+"+value):value),node.position);
@@ -1252,6 +1257,8 @@ export class GameControl extends Component {
             this.updateHandCardPos();
         }
 
+        this.node.getChildByName("UIShow").active=true;
+        this.node.getChildByName("UIShow").getChildByName("LbTip").active=false;
         let lbNode=this.node.getChildByName("UIShow").getChildByName("LbMyturn");
         let lb=lbNode.getComponent(Label);
         lb.string=data.myTurn?"我的回合":"对方回合";
@@ -1321,18 +1328,23 @@ export class GameControl extends Component {
         card.getComponent(CardControl).state=1;
         let pos=new Vec3(card.position.x,card.position.y);
         let posTarget:Vec3;
+        let isDirectAttack=false;
         if(target){
-            AudioManager.inst.playOneShot("audio/attack");
+            // AudioManager.inst.playOneShot("audio/attack");
             target.getComponent(CardControl).state=1;
             posTarget=new Vec3(target.position.x,target.position.y+(myself?-180:180));
         }else{
-            AudioManager.inst.playOneShot("audio/attack_direct");
+            isDirectAttack=true;
+            // AudioManager.inst.playOneShot("audio/attack_direct");
             posTarget=new Vec3(0,myself?360:-360);
             //直接攻击文字效果
+            this.node.getChildByName("UIShow").active=true;
+            this.node.getChildByName("UIShow").getChildByName("LbMyturn").active=false;
             let lbNode=this.node.getChildByName("UIShow").getChildByName("LbTip");
             let lb=lbNode.getComponent(Label);
             // lb.string=myself?"直接攻击":"对方直接攻击";
             lb.color=myself?new Color(104,150,128):new Color(209,144,128); //"#68967E":"#D19080"
+            lbNode.setPosition(lbNode.position.x,myself?100:-100);
             // lbNode.setPosition(lbNode.position.x,myself?-80:80);
             // lbNode.setScale(new Vec3(2,2));
             lbNode.active=true;
@@ -1349,13 +1361,17 @@ export class GameControl extends Component {
         card.getComponent(CardControl).initIndex=card.getSiblingIndex();
         card.setSiblingIndex(card.getParent().children.length);
         //tween动效
+        console.log("开始攻击tween");
         tween(card).to(0.2,{position:posTarget}).
         // delay(1).
         call(() => { 
-            card.setSiblingIndex(card.getComponent(CardControl).initIndex);
-            this.attackCompleteCall(card,myself,pos);//攻击结束回调
+            if(card){
+                console.log("》》》》》》》》攻击音效");
+                AudioManager.inst.playOneShot(isDirectAttack?"audio/attack_direct":"audio/attack");//可能有陷阱发动会导致攻击无效 此处先测试
+                card.setSiblingIndex(card.getComponent(CardControl).initIndex);
+                this.attackCompleteCall(card,myself,pos);//攻击结束回调
+            }
             // if(target)this.attackCompleteCall(target,!myself,target.position);//攻击结束回调
-            
         }).start();
         
         
@@ -1368,25 +1384,27 @@ export class GameControl extends Component {
             this.addTableCard(data.value,1,data.isMe);
         }else if(data.updateType==-1){
             console.log(data.uid,"卡牌破坏",data.isMe);
-            let removeCard=this.getTableCardByUID(data.uid).getComponent(CardControl);
-            let dt:number=0.2;
-            if(!removeCard.baseData){//处理消失效果 陷阱卡被破坏 显示卡牌
-                console.log("显示陷阱卡？？",data.value.id)
-                removeCard.changeData(data.value.id,data.uid);
-                dt=0.4;
-            }else{
-                if(removeCard.baseData.cardType==1){//武将死亡音效
-                    AudioManager.inst.playOneShot("audio/death1"+(Math.random()<0.5?1:2));
+            let removeCard=this.getTableCardByUID(data.uid);
+            let removeCardControl=removeCard.getComponent(CardControl);
+            if(removeCard){
+                Tween.stopAllByTarget(removeCard);//移除 例如攻击tween
+                let dt:number=0.2;
+                if(!removeCardControl.baseData){//处理消失效果 陷阱卡被破坏 显示卡牌
+                    console.log("显示陷阱卡？？",data.value.id)
+                    removeCardControl.changeData(data.value.id,data.uid);
+                    dt=0.4;
+                }else{
+                    if(removeCardControl.baseData.cardType==1){//武将死亡音效
+                        AudioManager.inst.playOneShot("audio/death1"+(Math.random()<0.5?1:2));
+                    }
                 }
-            }
-            removeCard.disappear();//闪白shader
-            tween(removeCard).delay(dt).hide().delay(0.1).show().delay(0.1).hide().delay(0.1).show().start();
-            let callTime:number=setTimeout(()=>{
-                this.removeTableCard(data.uid,data.isMe);
-            },800)
-            // this.removeTableCard(data.uid,data.isMe);
-            
-
+                removeCardControl.disappear();//闪白shader
+                tween(removeCard).delay(dt).hide().delay(0.1).show().delay(0.1).hide().delay(0.1).show().start();
+                let callTime:number=setTimeout(()=>{
+                    this.removeTableCard(data.uid,data.isMe);
+                },800);
+                // this.removeTableCard(data.uid,data.isMe);
+            }    
         }else if(data.updateType==-2){
             console.log(data.uid,"卡牌返回手卡",data.isMe);
             this.tableToHand(data.uid,data.isMe);

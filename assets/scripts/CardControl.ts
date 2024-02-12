@@ -337,7 +337,11 @@ export class CardControl extends Component {
         //判断显示我的陷阱卡信息
         if(this.posType==2&&(this.baseData&&this.baseData.cardType>1)) {
             this.gameControl.showRichTextCard(String(this.baseData.id));
-        }    
+        } 
+        if(this.posType==1&&this.baseData){
+            console.log("显示手牌 showinfo");
+            this.gameControl.showRichTextCard(String(this.baseData.id));
+        }   
         // console.log(this.node.getSiblingIndex(),"=========touch start",this.node.position);
         // console.log(this.node.getWorldPosition().x,this.node.getWorldPosition().y,"touchstart",e.getLocation(),e.getUILocation());
     }

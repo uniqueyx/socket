@@ -1,4 +1,4 @@
-import { _decorator, Component, Node, resources, JsonAsset, director, sys, Prefab, instantiate, NodeEventType, Label } from 'cc';
+import { _decorator, Component, Node, resources, JsonAsset, director, sys, Prefab, instantiate, NodeEventType, Label, EventTouch, tween, Tween, Vec3 } from 'cc';
 import GameConfig from './Base/GameConfig';
 import GameEvent from './Base/GameEvent';
 import { SocketIO } from './Base/SocketIO';
@@ -33,6 +33,15 @@ export class HallControl extends Component {
         
         //"prefab/Explosion"
         // await Promise.all([this.loadRes(), this.connectServer()]);
+        if(GameConfig.IP=="http://localhost"){
+            for(let i=0;i<3;i++){
+                this.node.getChildByName("bg1").getChildByName("BtTest"+(i+1)).active=true;
+            }
+        }else{
+            for(let i=0;i<3;i++){
+                this.node.getChildByName("bg1").getChildByName("BtTest"+(i+1)).active=false;
+            }
+        }
     }
     // async loadRes() {
     //     const list = [];
@@ -67,6 +76,7 @@ export class HallControl extends Component {
 
         GameEvent.Instance.off("connected",this.reqConnected,this);
         GameEvent.Instance.off("connect_error",this.reqConnectError,this);
+
     }
     start() {
         console.log("hallcontrol  start",this.socketIO)
@@ -168,8 +178,29 @@ export class HallControl extends Component {
         AudioManager.inst.playOneShot("audio/bt_back");
         this.node.getChildByName("UIHelp").active=false;
     }
+    //测试按钮
+    onBtTest(e:EventTouch, param:string){
+        console.log("测试按钮", param);
+        // this.node.getComponent()
+        let testObj=this.node.getChildByName("LeftTop").getChildByName("ImgHelp");
+        if(param=="0"){
+            testObj.setPosition(40,-40);
+            tween(testObj).to(3,{position:new Vec3(testObj.position.x+500,testObj.position.y) }).
+            call(() => { 
+                //更新卡组数量
+                AudioManager.inst.playOneShot("audio/bt_middle");
+                console.log("触发 测试回调")
+            }).
+            start();
+        }else if(param=="1"){
+            Tween.stopAllByTarget(testObj);//移除 例如攻击tween
+        }else if(param=="2"){
+            // Tween.stopAllByTarget(testObj);//移除 例如攻击tween
+        }
 
-    //服务器消息事件处理
+
+    }
+    //============================服务器消息事件处理
     reqMatchError(data:unknown){
         Toast.toast("先点击编辑卡组新建或启用匹配卡组！");
     }

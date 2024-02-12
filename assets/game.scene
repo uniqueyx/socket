@@ -1395,7 +1395,7 @@
     ],
     "value": {
       "__type__": "cc.Vec3",
-      "x": 280,
+      "x": 300,
       "y": 0,
       "z": 0
     }
@@ -1649,7 +1649,7 @@
     ],
     "value": {
       "__type__": "cc.Vec3",
-      "x": -280,
+      "x": -300,
       "y": 0,
       "z": 0
     }
@@ -4689,7 +4689,7 @@
       "__id__": 152
     },
     "_children": [],
-    "_active": false,
+    "_active": true,
     "_components": [
       {
         "__id__": 154
@@ -4798,7 +4798,7 @@
       "__id__": 152
     },
     "_children": [],
-    "_active": false,
+    "_active": true,
     "_components": [
       {
         "__id__": 157
