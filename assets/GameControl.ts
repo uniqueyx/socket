@@ -84,6 +84,7 @@ export class GameControl extends Component {
     }
     onDestroy(){
         console.log("gamecontrol 游戏场景destroy");
+        GameEvent.Instance.off("connected",this.reqConnected,this);
         GameEvent.Instance.off("disconnect",this.reqDisconnect,this);
         GameEvent.Instance.off("game_start",this.reqGameStart,this);
         GameEvent.Instance.off("game_data",this.reqGameData,this);
@@ -820,7 +821,7 @@ export class GameControl extends Component {
         let remainNode=this.node.getChildByName(myself?"RightBottom":"LeftTop");
         remainNode.removeChild(remainNode.children[remainNode.children.length-1]);
         if(remainNode.children.length<=3){
-            Toast.toast("卡组只剩"+remainNode.children.length+"张卡了!!!");
+            if(myself)  Toast.toast("卡组只剩"+remainNode.children.length+"张卡了!!!");
         }
         this.updateRemainCardNum(myself);
 
@@ -1190,7 +1191,7 @@ export class GameControl extends Component {
         this.initCard(data);
     }
     reqGameOver(data:any){
-        // AudioManager.inst.playOneShot("audio/card_magic");
+        AudioManager.inst.playOneShot("audio/"+(data.result==1?"win":"lose"));
         console.log("服务器游戏结束事件 游戏结束",data);
         this.unschedule(this.countDown);
         let node=this.node.getChildByName(data.result==1?"WinUI":"LoseUI");
