@@ -1,4 +1,4 @@
-import { _decorator, Component, Node, Prefab, instantiate, Vec3, Label, director, tween, view, Vec2, UITransform, Size, Rect, Color, NodeEventType, EventTouch, UIOpacity, RichText, Button, Sprite, Tween } from 'cc';
+import { _decorator, Component, Node, Prefab, instantiate, Vec3, Label, director, tween, view, Vec2, UITransform, Size, Rect, Color, NodeEventType, EventTouch, UIOpacity, RichText, Button, Sprite, Tween, sys } from 'cc';
 import GameConfig from './scripts/Base/GameConfig';
 import GameEvent from './scripts/Base/GameEvent';
 import { SocketIO } from './scripts/Base/SocketIO';
@@ -27,6 +27,8 @@ export class GameControl extends Component {
     myTurn:boolean;
     hp:number;
     hpOther:number;
+
+    gameType:number;//游戏类型 1竞技 2匹配 3剧情副本
 
     first:boolean;//是否先攻
     gameState:number;//游戏状态阶段 1准备 2换牌 3回合开始
@@ -138,6 +140,7 @@ export class GameControl extends Component {
         }
     }
     initUI(){
+        
         this.useGeneralTimes=1;
         this.actString="";
         this.turnCount=0;
@@ -146,6 +149,8 @@ export class GameControl extends Component {
 
         // this.node.getChildByName("Bg").getComponent(Sprite).changeSpriteFrameFromAtlas
 
+        this.node.getChildByName("UICenter").getChildByName("LbCountdown").active=false;
+        this.node.getChildByName("UICenter").getChildByName("BtSurrender").active=false;
         this.node.getChildByName("UICenter").getChildByName("BtTurnEnd").active=false;
         this.node.getChildByName("UICenter").getChildByName("LbOtherTurn").active=false;
         this.node.getChildByName("UIShow").active=false;
@@ -1154,14 +1159,39 @@ export class GameControl extends Component {
         console.log("服务器匹配成功事件 游戏开始",data);
         this.first=data.first;
         this.gameState=data.gameState;
-        this.node.getChildByName("RightTop").getChildByName("LbName").getComponent(Label).string=data.otherName;
-        this.node.getChildByName("ChangeCardShow").getChildByName("LabelFirst").getComponent(Label).string=this.first?"你是先攻":"你是后攻";
-        this.node.getChildByName("ChangeCardShow").active=true;
+        this.gameType=data.gameType;
         this.node.getChildByName("WaitUI").active=false;
+        // this.node.getChildByName("RightTop").getChildByName("LbName").getComponent(Label).string=data.otherName;
+        // this.node.getChildByName("ChangeCardShow").getChildByName("LabelFirst").getComponent(Label).string=this.first?"你是先攻":"你是后攻";
+        // this.node.getChildByName("ChangeCardShow").active=true;
+
+        //决斗开始
+        AudioManager.inst.playOneShot("audio/game_start");
+        this.node.getChildByName("UIShow").active=true;
+        this.node.getChildByName("UIShow").getChildByName("LbTip").active=false;
+        let lbNode=this.node.getChildByName("UIShow").getChildByName("LbMyturn");
+        let lb=lbNode.getComponent(Label);
+        lb.string="决斗开始!";
+        // lb.color=data.myTurn?new Color(104,150,128):new Color(209,144,128); //"#68967E":"#D19080"
+        lbNode.setPosition(lbNode.position.x,150);
+        lbNode.setScale(new Vec3(3,3));
+        lbNode.active=true;
+        tween(lbNode).to(0.5,{scale:new Vec3(1,1,1)}).
+            delay(1).
+            call(() => { 
+                lbNode.active=false;
+                //显示换手牌UI
+                this.node.getChildByName("RightTop").getChildByName("LbName").getComponent(Label).string=data.otherName;
+                this.node.getChildByName("ChangeCardShow").getChildByName("LabelFirst").getComponent(Label).string=this.first?"你是先攻":"你是后攻";
+                this.node.getChildByName("ChangeCardShow").active=true;
+                this.node.getChildByName("UICenter").getChildByName("LbCountdown").active=true;
+                this.node.getChildByName("UICenter").getChildByName("BtSurrender").active=true;
+            }).start();
     }
     reqGameData(data:any){
         console.log("游戏重连数据",data);
         Tween.stopAll();
+        this.gameType=data.gameType;
         this.first=data.first;
         this.gameState=data.gameState;
         this.myTurn=data.myTurn;
@@ -1171,6 +1201,8 @@ export class GameControl extends Component {
         this.useGeneralTimes=data.useGeneralTimes;
         this.changeHand=data.changeHand;
         //回合相关
+        this.node.getChildByName("UICenter").getChildByName("LbCountdown").active=true;
+        this.node.getChildByName("UICenter").getChildByName("BtSurrender").active=true;
         this.node.getChildByName("UICenter").getChildByName("BtTurnEnd").active=data.myTurn;
         this.node.getChildByName("UICenter").getChildByName("LbOtherTurn").active=!data.myTurn;
         if(this.gameState>2)    this.showTurnCountDown(data.turnTime);//判断是否换手牌阶段
@@ -1206,6 +1238,18 @@ export class GameControl extends Component {
         else if(data.winType==2) str+="无卡可抽";
         else if(data.winType==3) str+="投降";
         node.getChildByName("LbResult").getComponent(Label).string=str;
+        //剧本挑战
+        if(this.gameType==3&&data.result==1){
+            let currentLevel=GameConfig.USER_DATA.level;
+            if(currentLevel==0){
+                GameConfig.USER_DATA.level=11;
+            }else{
+                if(currentLevel%10==3) GameConfig.USER_DATA.level=Math.floor(GameConfig.USER_DATA.level+10 / 10)*10;
+                else  GameConfig.USER_DATA.level++;
+            } 
+            console.log(currentLevel,"原level 现level",GameConfig.USER_DATA.level)
+            sys.localStorage.setItem("sgCardUser",JSON.stringify(GameConfig.USER_DATA));
+        }
     }
     reqError(data:any){
         console.log("服务器游戏错误信息",data);
@@ -1241,9 +1285,8 @@ export class GameControl extends Component {
     }
     reqTurnStart(data:any){
         console.log("服务器回合开始事件 回合开始",data);
-        if(data.myTurn){
-            AudioManager.inst.playOneShot("audio/myturn");
-        }
+        
+        AudioManager.inst.playOneShot(data.myTurn?"audio/myturn":"audio/otherturn");
         let dt=0.4;
         if(this.gameState==2){//换牌状态特殊处理
             dt=1;

@@ -33,6 +33,7 @@ export class HallControl extends Component {
         
         //"prefab/Explosion"
         // await Promise.all([this.loadRes(), this.connectServer()]);
+        return;
         if(GameConfig.IP=="http://localhost"){
             for(let i=0;i<3;i++){
                 this.node.getChildByName("bg1").getChildByName("BtTest"+(i+1)).active=true;
@@ -168,6 +169,7 @@ export class HallControl extends Component {
     }
     onBtDungeon(){
         AudioManager.inst.playOneShot("audio/bt_big");
+        director.loadScene("dungeon");
     }
     //帮助按钮
     onBtHelp(){

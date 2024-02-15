@@ -6,7 +6,7 @@ import io from 'socket.io-client/dist/socket.io.js'
 import GameEvent from "./GameEvent";
 import Toast from "./Toast";
 import GameConfig from "./GameConfig";
-import { director } from "cc";
+import { director, sys } from "cc";
 // import io from 'socket.io/client-dist/socket.io.js'
 
 // @ccclass('SocketIO')
@@ -40,6 +40,9 @@ export class SocketIO extends Singleton {
         
         });
 
+        this.socket.on("USER",(data: any) => {
+            this.onSocketHandle(data);
+        });
         this.socket.on("CARD",(data: any) => {
             this.onSocketHandle(data);
         });
@@ -115,6 +118,12 @@ export class SocketIO extends Singleton {
                 // Toast.alert(data.msg,false,()=>{
                 //     director.loadScene("hall");
                 // });
+                break;
+            case "user_update":
+                let obj={account:data.account,password:data.password,uid:data.uid,nick:data.nick,level:data.level,vip:data.vip};
+                GameConfig.USER_DATA=obj;
+                sys.localStorage.setItem("sgCardUser",JSON.stringify(obj));
+                console.log("玩家信息更新！")
                 break;
         }
     }

@@ -88,9 +88,9 @@ export class LoginControl extends Component {
               console.log("登陆成功",res.data);
               // await this.connect(data.token);
               director.loadScene("hall");
-              let obj={account:account,password:password,uid:res.data.uid,nick:res.data.nick};
+              let obj={account:account,password:password,uid:res.data.uid,nick:res.data.nick,level:res.data.level,vip:res.data.vip};
               GameConfig.USER_DATA=obj;
-              sys.localStorage.setItem("sgCardUser",JSON.stringify(obj))
+              sys.localStorage.setItem("sgCardUser",JSON.stringify(obj));
             } 
 
           // }catch(error){
