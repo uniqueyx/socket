@@ -7,6 +7,7 @@ export default class GameConfig{
   static TABLEGENERAL_LIMIT:number = 5;//武将卡上限
   static TABLEMAGIC_LIMIT:number = 5;//魔法卡上限
   static INIT_HP:number = 100;//初始士气
+  static INIT_HP_DUNGEON:number = 150;//剧情副本AI初始士气
   static CARD_COUNT_LIMIT:number = 30;//卡组的卡牌数量上限
 
   //全局数据

@@ -372,7 +372,7 @@
     "rare": 4,
     "attack": 18,
     "need": 0,
-    "effect": 104,
+    "effect": 0,
     "appearEffect": "[{\"id\":305,\"obj\":1,\"pos\":4,\"value\":1,\"cardType\":1,\"force\":3}]",
     "deathEffect": 0
   },
@@ -906,7 +906,7 @@
     "attack": -1,
     "need": 0,
     "effect": 0,
-    "appearEffect": "[{\"id\":305,\"obj\":1,\"pos\":3,\"value\":2,\"noself\":1,\"force\":4,\"cardType\":1},{\"id\":401,\"obj\":1,\"pos\":2,\"cardType\":1,\"value\":1,\"buffId\":\"101_103_102_105_401\",\"buffValue\":\"3\"}]",
+    "appearEffect": "[{\"id\":201,\"obj\":1,\"value\":1},{\"id\":401,\"obj\":1,\"pos\":2,\"cardType\":1,\"value\":1,\"buffId\":\"101_103_102_105_401\",\"buffValue\":\"3\"}]",
     "deathEffect": 0
   },
   {

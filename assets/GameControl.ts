@@ -144,8 +144,7 @@ export class GameControl extends Component {
         this.useGeneralTimes=1;
         this.actString="";
         this.turnCount=0;
-        this.hp=GameConfig.INIT_HP;
-        this.hpOther=GameConfig.INIT_HP;
+        
 
         // this.node.getChildByName("Bg").getComponent(Sprite).changeSpriteFrameFromAtlas
 
@@ -158,11 +157,16 @@ export class GameControl extends Component {
         this.node.getChildByName("ActShow").getChildByName("RichText").getComponent(RichText).string="";
         this.node.getChildByName("ActShow").getChildByName("RichTextBg").getComponent(UITransform).height=0;
         this.node.getChildByName("LeftBottom").getChildByName("LbName").getComponent(Label).string=GameConfig.USER_DATA.nick;//this.socketIO.userID;
-        this.node.getChildByName("LeftBottom").getChildByName("LbHP").getComponent(Label).string=String(GameConfig.INIT_HP);
-        this.node.getChildByName("RightTop").getChildByName("LbHP").getComponent(Label).string=String(GameConfig.INIT_HP);
+
         
         this.node.getChildByName("WaitUI").active=true;
         // this.node.getChildByName("ActShow").getComponent(UIOpacity).opacity=150;
+    }
+    initHP(){
+        this.hp=GameConfig.INIT_HP;
+        this.hpOther=this.gameType==3?GameConfig.INIT_HP_DUNGEON:GameConfig.INIT_HP;
+        this.node.getChildByName("LeftBottom").getChildByName("LbHP").getComponent(Label).string=String(this.hp);
+        this.node.getChildByName("RightTop").getChildByName("LbHP").getComponent(Label).string=String(this.hpOther);
     }
     countDown(){
         console.log("倒计时方法参数");
@@ -947,7 +951,7 @@ export class GameControl extends Component {
     //确定按钮 返回主页
     onBtConfirm(){
         AudioManager.inst.playOneShot("audio/bt_back");
-        director.loadScene("hall");
+        director.loadScene(this.gameType==3?"dungeon":"hall");
     }
     //HP改变
     updateHP(value:number,myself:boolean=true){
@@ -1161,6 +1165,8 @@ export class GameControl extends Component {
         this.gameState=data.gameState;
         this.gameType=data.gameType;
         this.node.getChildByName("WaitUI").active=false;
+
+        this.initHP();
         // this.node.getChildByName("RightTop").getChildByName("LbName").getComponent(Label).string=data.otherName;
         // this.node.getChildByName("ChangeCardShow").getChildByName("LabelFirst").getComponent(Label).string=this.first?"你是先攻":"你是后攻";
         // this.node.getChildByName("ChangeCardShow").active=true;
@@ -1244,7 +1250,7 @@ export class GameControl extends Component {
             if(currentLevel==0){
                 GameConfig.USER_DATA.level=11;
             }else{
-                if(currentLevel%10==3) GameConfig.USER_DATA.level=Math.floor(GameConfig.USER_DATA.level+10 / 10)*10;
+                if(currentLevel%10==3) GameConfig.USER_DATA.level=Math.floor((GameConfig.USER_DATA.level+10) / 10)*10+1;
                 else  GameConfig.USER_DATA.level++;
             } 
             console.log(currentLevel,"原level 现level",GameConfig.USER_DATA.level)
