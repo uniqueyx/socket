@@ -213,6 +213,7 @@ export class HallControl extends Component {
     reqMatchWait(data:unknown){
         console.log("服务器事件 matchwait",data);
         this.node.getChildByName("MatchMask").active=true;
+        this.node.getChildByName("MatchMask").getChildByName("LbTip").getComponent(Label).string="小贴士:"+GameConfig.TipWords[Math.floor(Math.random() * GameConfig.TipWords.length)];
         this.dotCount=0;
         this.node.getChildByName("MatchMask").getChildByName("Label").getComponent(Label).string='正在匹配对手 请您耐心等待';
         this.schedule(this.updateLbWait,0.5);

@@ -275,10 +275,10 @@ export class ArenaControl extends Component {
         this.showList(data.selectedCards);
         this.showSelect(data.force?data.force:0,data.currentCards);
         if(data.new){
-            this.node.getChildByName("BtSartCard").active=true;
+            this.node.getChildByName("BtStartCard").active=true;
             this.node.getChildByName("BtRestart").active=false;    
             this.node.getChildByName("BtStartGame").active=false;
-        }else this.node.getChildByName("BtSartCard").active=false;
+        }else this.node.getChildByName("BtStartCard").active=false;
     }
     reqAreanaSelect(data:any){
         console.log("服务器消息 竞技场选牌",data);

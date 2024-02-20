@@ -31,8 +31,13 @@ export default class GameConfig{
   //势力名
   static FORCE_NAME:string[]=["通用","黄巾","东汉","十常侍","盗贼"];
   static FORCE_NAME_ICON:string[]=["通","黄","汉","十","盗"];
+  static FORCE_DUNGEON:string[]=["通","剧情一 黄巾之乱","剧情二 汉末忠良","剧情三 十常侍乱政","剧情四 盗贼蜂起"];
+
+  //游戏小贴士 提示文本
+  static TipWords:string[]=["必须先攻击带有(嘲讽)buff的武将","(圣盾)buff可以免除一次战斗破坏","有(守护)buff的武将不会被效果破坏","有(铁壁)buff的武将战斗时受到士气伤害为0","有(双击)buff的武将可以攻击两次"
+  ,"剧情副本难度较高但可以无限挑战","武将卡/魔法卡/陷阱卡相互配合能发挥最大战力","优先解掉对方的卡并占场不断积累优势","保持充足手牌在中后期非常重要","充分了解卡牌效果能组建更合理的卡组"]
   
-  //静态方法
+  //================静态方法
   static getCardDataById(id:number):any{
     const card = GameConfig.CARD_DATA.find(item => item.id === id);
     if(card==undefined) console.log("有BUG 卡牌图鉴中没找到id对应的数据",id); 
@@ -53,7 +58,7 @@ export default class GameConfig{
         case this.BUFF_DEFENSE:
           str="铁壁(战斗受到士气伤害为0)";
           break;  
-          case this.BUFF_DOUBLE:
+        case this.BUFF_DOUBLE:
             str="双击(攻击两次)";
             break;        
         case this.BUFF_ATTACK:

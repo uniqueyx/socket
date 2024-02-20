@@ -2386,7 +2386,7 @@
     "__prefab": null,
     "_contentSize": {
       "__type__": "cc.Size",
-      "width": 220,
+      "width": 275,
       "height": 50.4
     },
     "_anchorPoint": {
@@ -2416,7 +2416,7 @@
       "b": 207,
       "a": 255
     },
-    "_string": "决斗三国",
+    "_string": "三国决斗王",
     "_horizontalAlign": 1,
     "_verticalAlign": 1,
     "_actualFontSize": 55,

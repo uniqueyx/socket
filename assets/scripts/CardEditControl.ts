@@ -92,6 +92,7 @@ export class CardEditControl extends Component {
         this.BtCreateConfirm=this.node.getChildByName("UICreateCard").getChildByName("BtCreateConfirm");
         this.BtCreateCancel=this.node.getChildByName("UICreateCard").getChildByName("BtCreateCancel");
         // this.loadData();
+        this.node.getChildByName("UICreateCard").active=false;
         this.node.getChildByName("UICreateCard").getChildByName("BgRect").getComponent(UITransform).height=Math.ceil((GameConfig.FORCE_NAME.length-1)/8)*80*2+240;
         this.cardNameEditBox = this.node.getChildByName("UICreateCard").getChildByName("EbCardName").getComponent(EditBox);
         this.node.getChildByName("UICreateCard").getChildByName("EbCardName").setPosition(0,Math.ceil((GameConfig.FORCE_NAME.length-1)/8)*80+30);
@@ -302,9 +303,13 @@ export class CardEditControl extends Component {
         // console.log(max,"<<max",this.cardNum)
         for(let i=this.currentPage*this.cardNum;i<max;i++){
             let c= instantiate(this.Card);
+            let cControl=c.getComponent(CardControl);
             // c.name="leftShowCard";
             c.getComponent(CardControl).initData(0,this.cardDataList[force][i],0,i-this.currentPage*this.cardNum);
             c.setParent(this.node.getChildByName("NodeList"));//.getChildByName("UIInfo")
+            if(cControl.baseData.force&&cControl.baseData.rare==4&&GameConfig.USER_DATA.level<cControl.baseData.force*10+3){
+                cControl.setLock(true);
+            }else cControl.setLock(false);
             // console.log(this.cardDataList[force][i],"<<this.cardDataList[force][i]")
             // this.node.getChildByName("NodeList").addChild(c);
             // c.getComponent(CardControl).initParent(this.node.getChildByName("NodeList"));
@@ -674,6 +679,7 @@ export class CardEditControl extends Component {
     cardEditTouchStart(data:any){
         let node=this.node.getChildByName("UIMove");
         node.removeAllChildren();
+        //根据剧情副本通关判断传说卡是否解锁
         if(!this.showDetail) return;
         let c= instantiate(this.Card);
         c.name="moveCard";
@@ -727,7 +733,7 @@ export class CardEditControl extends Component {
             let cardControl=card.getComponent(CardEditItemControl);
             if(cardControl.id==data.id){
                 this.selectCard=card;
-                card.getChildByName("Bg").getComponent(Sprite).color=Color.YELLOW;
+                card.getChildByName("Bg").getComponent(Sprite).color=Color.GREEN;
             }else{
                 card.getChildByName("Bg").getComponent(Sprite).color=new Color(206,206,206);
             }

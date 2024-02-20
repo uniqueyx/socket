@@ -24,6 +24,8 @@ export class CardControl extends Component {
     attackedCount:number;//已攻击次数
     gameControl:GameControl;//游戏对战控制类
 
+    isLock:boolean;
+
     //shader
     duration: number = 0.5;//0.5
     _median: number = 0;
@@ -261,6 +263,12 @@ export class CardControl extends Component {
     updateIndex(index:number){
         this.index=index;
     }
+    //显示 未解锁图标
+    setLock(bool:boolean){
+        this.isLock=bool;
+        this.node.getChildByName("MaskLock").active=bool;
+        this.node.getChildByName("ImgLock").active=bool;
+    }
     //显示卡背
     showBack(bool:boolean){
         this.node.getChildByName("CardBg").active=!bool||this.posType==2;
@@ -324,6 +332,10 @@ export class CardControl extends Component {
     }    
     //卡牌触摸
     onTouchStart(e:EventTouch){
+        if(this.isLock) {
+            if(this.baseData)Toast.toast("通关'"+GameConfig.FORCE_DUNGEON[this.baseData.force]+"'可以解锁")
+            return;
+        }    
         if(!this.gameControl)   GameEvent.Instance.emit("cardEditTouchStart",{pos:this.node.position,id:this.baseData?this.baseData.id:0});
         if(!this.gameControl||this.gameControl.gameState==2) return;
         this.initPos=new Vec3(this.node.position);//.x,this.node.position.y
@@ -346,6 +358,7 @@ export class CardControl extends Component {
         // console.log(this.node.getWorldPosition().x,this.node.getWorldPosition().y,"touchstart",e.getLocation(),e.getUILocation());
     }
     onTouchMove(e:EventTouch){
+        if(this.isLock) return;
         if(!this.gameControl)   GameEvent.Instance.emit("cardEditTouchMove",{posX:e.getUIDelta().x,posY:e.getUIDelta().y});
         if(!this.gameControl||this.gameControl.gameState==2) return;
         // if(this.posType==2) console.log("e>>touchmove",e);
