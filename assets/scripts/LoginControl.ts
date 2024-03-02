@@ -1,4 +1,4 @@
-import { _decorator, Component, Node, EditBox, director, sys } from 'cc';
+import { _decorator, Component, Node, EditBox, director, sys, view } from 'cc';
 import Toast from './Base/Toast';
 import GameConfig from './Base/GameConfig';
 import { AudioManager } from './Base/AudioManager';
@@ -25,7 +25,7 @@ export class LoginControl extends Component {
             this.accountEditBox.string=dataStorage.account;
             this.passwordEditBox.string=dataStorage.password;
         }
-        
+        this.node.getChildByName("NodeTip").active= view.getVisibleSize().x/view.getVisibleSize().y>1;
     }
     start() {
 

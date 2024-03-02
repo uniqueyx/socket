@@ -1,4 +1,4 @@
-import { _decorator, Component, Node, Prefab, instantiate, Vec3, Label, director, tween, view, Vec2, UITransform, Size, Rect, Color, NodeEventType, EventTouch, UIOpacity, RichText, Button, Sprite, Tween, sys } from 'cc';
+import { _decorator, Component, Node, Prefab, instantiate, Vec3, Label, director, tween, view, Vec2, UITransform, Size, Rect, Color, NodeEventType, EventTouch, UIOpacity, RichText, Button, Sprite, Tween, sys, game } from 'cc';
 import GameConfig from './scripts/Base/GameConfig';
 import GameEvent from './scripts/Base/GameEvent';
 import { SocketIO } from './scripts/Base/SocketIO';
@@ -35,6 +35,11 @@ export class GameControl extends Component {
     turnCount:number;//回合数
     useGeneralTimes:number;//武将通常召唤次数
     changeHand:boolean;//是否更换完手牌
+
+    //直接攻击全屏震动
+    private isShaking: boolean;
+    private oldTime: number;
+    private oldPos: { x: number; y: number } = { x: 0, y: 0 };
     onLoad(){
         // GameEvent.Instance.on("match_success")
         this.socketIO=SocketIO.Instance;
@@ -127,10 +132,56 @@ export class GameControl extends Component {
 
 
     update(deltaTime: number) {                                                                                                                                                         
-        
+        this.onShakeUpdate();
     }
 
     //==================方法
+    /***
+   * 正弦震动
+   * y= A * sin *(wx + f)
+   */
+    onShake() {
+        if (this.isShaking) {
+            return
+        }
+        // this.node.setPosition(-100,-100);
+        this.isShaking = true;
+        // this.shakeType = type
+        this.oldTime = game.totalTime;
+        this.oldPos.x = this.node.getChildByName("Camera").position.x;
+        this.oldPos.y = this.node.getChildByName("Camera").position.y;
+        
+
+    }
+    onShakeUpdate() {
+        if (this.isShaking) {
+        //振幅
+        const shakeAmount = 10//1.6
+        //持续时间
+        const duration = 200
+        //频率
+        const frequency = 12
+        //当前时间
+        const curSecond = (game.totalTime - this.oldTime) / 1000
+        //总时间
+        const totalSecond = duration / 1000
+        const offset = shakeAmount * Math.sin(frequency * Math.PI * curSecond)
+        this.node.getChildByName("Camera").setPosition(this.oldPos.x, this.oldPos.y - offset)
+        // if (this.shakeType === SHAKE_TYPE_ENUM.TOP) {
+        //     this.node.setPosition(this.oldPos.x, this.oldPos.y - offset)
+        // } else if (this.shakeType === SHAKE_TYPE_ENUM.BOTTOM) {
+        //     this.node.setPosition(this.oldPos.x, this.oldPos.y + offset)
+        // } else if (this.shakeType === SHAKE_TYPE_ENUM.LEFT) {
+        //     this.node.setPosition(this.oldPos.x - offset, this.oldPos.y)
+        // } else if (this.shakeType === SHAKE_TYPE_ENUM.RIGHT) {
+        //     this.node.setPosition(this.oldPos.x + offset, this.oldPos.y)
+        // }
+        if (curSecond > totalSecond) {
+            this.isShaking = false
+            this.node.getChildByName("Camera").setPosition(this.oldPos.x, this.oldPos.y)
+        }
+        }
+    }
     sendGameReady(){
         if(this.socketIO.socket){
             this.socketIO.socket.emit("GAME", {
@@ -189,7 +240,7 @@ export class GameControl extends Component {
     //投降
     onBtSurrender(){
         //测试代码
-
+        
         AudioManager.inst.playOneShot("audio/bt_back");
         console.log("发送 投降");
         Toast.alert("确定投降结束本局对战吗？",true,()=>{
@@ -1416,6 +1467,7 @@ export class GameControl extends Component {
         call(() => { 
             if(card){
                 console.log("》》》》》》》》攻击音效");
+                if(isDirectAttack)  this.onShake();//屏幕震动
                 AudioManager.inst.playOneShot(isDirectAttack?"audio/attack_direct":"audio/attack");//可能有陷阱发动会导致攻击无效 此处先测试
                 card.setSiblingIndex(card.getComponent(CardControl).initIndex);
                 this.attackCompleteCall(card,myself,pos);//攻击结束回调
